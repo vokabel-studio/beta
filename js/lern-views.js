@@ -624,6 +624,7 @@ async function endeView(ctx) {
     if (gutscheine.length) setTimeout(() => G.feiere(gutscheine), 1200);
     if (S.cfg.terminRef) await markiereTerminAufgabe(S.cfg.terminRef);
     import('./sicherung.js').then((m) => m.autoSicherung()).then((r) => { if (r?.ok) toast('💾 Automatisch gesichert'); }).catch(() => {});
+    import('./cloud.js').then((m) => m.autoAbgleich()).catch(() => {});
     S.ende = { richtig, gesamt: gewertet.length, prozent, schwach, gutscheine, gsHtml: gutscheine.map((f) => G.gutscheinHtml(f)).join('') };
     merkeSitzung();   // Übung fertig → nicht mehr zum Fortsetzen anbieten
     // Erfolgs-Animationen (nur wenn eingeschaltet)

@@ -8,6 +8,7 @@ import { lernenView, uebungView } from './lern-views.js';
 import * as P from './plan-views.js';
 import * as T from './teilen-views.js';
 import { hoerquizView } from './hoerquiz.js';
+import { qrSendenView, qrEmpfangenView } from './abgleich-views.js';
 import { BETA, LS_PREFIX } from './config.js';
 import { setzeDesign } from './design.js';
 import { setzeStyle, style } from './styles.js';
@@ -42,7 +43,9 @@ const ROUTES = [
   ['erfolge', P.erfolgeView],
   ['eltern', P.elternView],
   ['teilen', T.teilenView],
-  ['paket-laden', T.paketLadenView]
+  ['paket-laden', T.paketLadenView],
+  ['qr-senden', qrSendenView],
+  ['qr-empfangen', qrEmpfangenView]
 ];
 
 function match(path) {
@@ -117,7 +120,7 @@ async function seed() {
     ...FAECHER.map((f) => ({ store: 'faecher', op: 'put', value: { ...f } })),
     ...LEHRWERKE.map((l) => ({ store: 'lehrwerke', op: 'put', value: { ...l, vorinstalliert: true } }))
   ];
-  await db.batch(ops);
+  await db.batch(ops, { roh: true });   // ohne Zeitstempel: Löschungen von anderen Geräten gewinnen
   await db.setMeta('seed', 1);
 }
 
@@ -132,15 +135,35 @@ async function start() {
       ${esc(e.message || e)}<br><br>Mögliche Ursache: privater Modus in Safari. Bitte die App normal öffnen.</div>`;
     return;
   }
+  // Rückkehr von der Anmeldung bei einem Cloud-Anbieter (OneDrive)?
+  const OD = await import('./cloud-onedrive.js');
+  if (OD.istRueckkehr()) {
+    try { await OD.anmeldungAbschliessen(); toast('Mit OneDrive verbunden ✓ Gleiche ab …', 4000); }
+    catch (e) { toast(e.message || 'Anmeldung hat nicht geklappt.', 6000); }
+  }
   window.addEventListener('hashchange', render);
   render();
   import('./sicherung.js').then((m) => m.autoSicherung()).catch(() => {});
+  cloudAbgleich();
   import('./lernen.js').then((m) => m.archiviereEreignisse()).catch((e) => console.warn('Aufräumen:', e));
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     navigator.serviceWorker.register('sw.js').catch((e) => console.warn('Service Worker:', e));
     navigator.serviceWorker.addEventListener('controllerchange', () => toast('App wurde aktualisiert.'));
   }
+}
+
+// Automatischer Cloud-Abgleich (falls verbunden). Neue Daten vom anderen Gerät: Übersichtsseiten neu zeichnen,
+// auf allen anderen Seiten (Formulare, Übungen) nicht stören – dort sieht man es beim nächsten Seitenwechsel.
+export async function cloudAbgleich() {
+  try {
+    const C = await import('./cloud.js');
+    const s = await C.autoAbgleich();
+    if (!s || !(s.neu + s.geaendert + s.geloescht)) return;
+    const seite = location.hash.replace(/^#\/?/, '').split(/[/?]/)[0];
+    if (['', 'home', 'bibliothek', 'plan', 'erfolge', 'backup', 'profile'].includes(seite)) render();
+    else toast('🔄 Neue Daten vom anderen Gerät übernommen.');
+  } catch { /* Status steht unter Sicherung */ }
 }
 
 start();

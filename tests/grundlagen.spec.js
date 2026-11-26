@@ -15,7 +15,8 @@ test.describe('Versionsnummer und Offline-Dateien', () => {
 
   test('Alle App-Dateien sind offline verfügbar (Liste im Service Worker)', () => {
     const liste = JSON.parse('[' + /const DATEIEN = \[([\s\S]*?)\];/.exec(datei('sw.js'))[1].replace(/'/g, '"') + ']');
-    for (const js of readdirSync(new URL('../js/', import.meta.url))) {
+    const appDateien = readdirSync(new URL('../js/', import.meta.url), { recursive: true }).filter((f) => /\.m?js$/.test(f));
+    for (const js of appDateien) {
       expect(liste, `js/${js} fehlt in sw.js (DATEIEN) – dann geht sie offline nicht`).toContain(`js/${js}`);
     }
     for (const f of liste.filter((x) => x !== './')) expect(existsSync(new URL('../' + f, import.meta.url)), `${f} steht in sw.js, existiert aber nicht`).toBe(true);

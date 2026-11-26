@@ -73,6 +73,7 @@ export async function profileView(_p, ctx) {
       <p class="small"><strong>Du ziehst um oder hast ein neues Gerät?</strong> Dann lade einfach deine Sicherung:</p>
       <label class="btn secondary block" for="pv-sicherung">📂 Sicherung laden</label>
       <input id="pv-sicherung" type="file" accept=".json,application/json" hidden>
+      <a class="btn secondary block" href="#/qr-empfangen" style="margin-top:10px">📲 Von einem anderen Handy übertragen (QR-Code)</a>
       <div id="pv-info"></div></div>`}
     <div class="profile-grid">
       ${profile.map((p) => `
@@ -203,6 +204,7 @@ export async function homeView(_p, ctx) {
   const zuletzt = units.filter((u) => meine.has(u.id)).sort((a, b) => (b.geaendertAm || '').localeCompare(a.geaendertAm || '')).slice(0, 3);
   const { erinnerungFaellig } = await import('./sicherung.js');
   const erinnerung = await erinnerungFaellig();
+  const cloud = await db.getMeta('cloud');
   const [fz, termin, bel] = await Promise.all([nVok ? L.faelligZahlen(ctx.profil) : { faellig: 0, neu: 0, neuHeute: 0 }, naechsterTermin(ctx.profil.id), hole(ctx.profil.id)]);
   const offen = LV.offeneSitzung(ctx.profil.id);
   const gutscheine = await (await import('./gutscheine.js')).offene(ctx.profil.id);
@@ -219,6 +221,7 @@ export async function homeView(_p, ctx) {
     ${umzugKarte()}
     <h2 style="margin-top:4px">Hallo ${esc(ctx.profil.name)}! ${avatarHtml(ctx.profil.avatar, 22)}</h2>
     <p class="muted">${plural(units.length, 'Unit', 'Units')} · ${plural(nVok, 'Vokabel', 'Vokabeln')} auf diesem Gerät</p>
+    ${cloud?.status === 'anmelden' ? '<a class="msg warn" href="#/backup" style="display:block;text-decoration:none">☁️ Abgleich pausiert: Bitte kurz neu bei OneDrive anmelden <strong>›</strong></a>' : ''}
     ${erinnerung ? `<a class="msg warn" href="#/backup" style="display:block;text-decoration:none">💾 ${erinnerung.seit === null ? 'Du hast noch nie gesichert.' : `Letzte Sicherung vor ${erinnerung.seit} Tagen.`} <strong>Jetzt sichern ›</strong></a>` : ''}
     ${gutscheine.length ? `<a class="msg ok" href="#/erfolge" style="display:block;text-decoration:none">🎟️ Du hast ${gutscheine.length === 1 ? 'einen Gutschein' : `${gutscheine.length} Gutscheine`} zum Einlösen: <strong>${esc(gutscheine.map((g) => g.text).join(', '))}</strong> ›</a>` : ''}
     ${offen ? LV.fortsetzenKarte(offen) : ''}
@@ -784,6 +787,8 @@ export async function backupView(_p, ctx) {
   const seit = letzte ? Math.floor((Date.now() - new Date(letzte).getTime()) / 86400000) : null;
   const artText = { ordner: 'in den Sicherungsordner', geteilt: 'über Teilen', heruntergeladen: 'als Download' }[art] || '';
   const mobil = isIOS() || /Android/i.test(navigator.userAgent);
+  const AB = await import('./abgleich-views.js');
+  const abgleich = await AB.abgleichKarte();
   const html = `
     <div class="card">
       <h3 style="margin-top:0">💾 Sicherung erstellen</h3>
@@ -792,6 +797,8 @@ export async function backupView(_p, ctx) {
       <button class="btn block" id="bk-export">${mobil ? '📤 Sichern … (Teilen-Menü)' : '⬇️ Sicherung herunterladen'}</button>
       ${ordner ? '<button class="btn soft block" id="bk-ordner-jetzt" style="margin-top:10px">📁 In Sicherungsordner speichern</button>' : ''}
     </div>
+
+    ${abgleich}
 
     <div class="card">
       <h3 style="margin-top:0">📦 Vokabeln teilen <span class="badge">ohne Profile</span></h3>
@@ -839,6 +846,7 @@ export async function backupView(_p, ctx) {
     title: 'Sicherung', back: 'home', html,
     bind(root) {
       const fehler = (e) => { if (e?.name !== 'AbortError') toast('Hat nicht geklappt: ' + (e?.message || e)); };
+      AB.bindAbgleich(root, ctx);
 
       // ----- Status des Sicherungsordners -----
       const zeit = (t) => new Date(t).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -930,7 +938,7 @@ export async function backupView(_p, ctx) {
       $('#bk-wipe', root).onclick = async () => {
         if (!confirm('Wirklich ALLE Daten auf diesem Gerät löschen? Erstelle vorher eine Sicherung!')) return;
         if (!confirm('Letzte Nachfrage: Alles unwiderruflich löschen?')) return;
-        await db.clearStores([...db.INHALT_STORES, ...db.LERN_STORES, 'profile', 'importe', 'meta']);
+        await db.clearStores([...db.INHALT_STORES, ...db.LERN_STORES, 'profile', 'importe', 'meta', 'geloescht']);
         ctx.setzeAktivesProfil(null);
         location.hash = '#/';
         location.reload();
