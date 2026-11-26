@@ -89,7 +89,8 @@ export async function kiNachbauen(page, antworten) {
     const antworte = (o) => route.fulfill({ contentType: 'application/json', ...o, headers: { ...CORS, ...(o.headers || {}) } });
     if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: CORS });
     if (pfad === '/api/v1/key') {
-      const ok = req.headers().authorization === 'Bearer sk-or-test';
+      // allHeaders(): auch in WebKit mit dem Authorization-Header (headers() lässt ihn dort weg)
+      const ok = (await req.allHeaders()).authorization === 'Bearer sk-or-test';
       return antworte({ status: ok ? 200 : 401, body: JSON.stringify(ok ? { data: { label: 'test' } } : { error: { message: 'invalid key' } }) });
     }
     if (pfad === '/api/v1/models') {
@@ -100,7 +101,8 @@ export async function kiNachbauen(page, antworten) {
       ] }) });
     }
     if (pfad === '/api/v1/chat/completions') {
-      const body = JSON.parse(req.postData());
+      let body = {};
+      try { body = JSON.parse(req.postData() ?? req.postDataBuffer()?.toString() ?? '{}'); } catch { /* Inhalt nicht lesbar */ }
       anfragen.push(body);
       const a = antworten[Math.min(anfragen.length - 1, antworten.length - 1)];
       if (a.status) return antworte({ status: a.status, body: JSON.stringify({ error: { message: a.text || 'Fehler', code: a.status } }) });
