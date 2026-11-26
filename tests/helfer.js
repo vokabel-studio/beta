@@ -81,15 +81,19 @@ export async function testRichtigMachen(page, unitId) {
 /** Nachgebauter KI-Anbieter (OpenRouter). antworten: Liste von Funktionen/Objekten je Anfrage, die letzte wiederholt sich. */
 export async function kiNachbauen(page, antworten) {
   const anfragen = [];
+  // Wie der echte Anbieter: Aufrufe aus dem Browser erlauben (CORS) – WebKit/Safari prüft das streng
+  const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, content-type', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' };
   await page.context().route('https://openrouter.ai/**', async (route) => {
     const req = route.request();
     const pfad = new URL(req.url()).pathname;
+    const antworte = (o) => route.fulfill({ contentType: 'application/json', ...o, headers: { ...CORS, ...(o.headers || {}) } });
+    if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: CORS });
     if (pfad === '/api/v1/key') {
       const ok = req.headers().authorization === 'Bearer sk-or-test';
-      return route.fulfill({ status: ok ? 200 : 401, contentType: 'application/json', body: JSON.stringify(ok ? { data: { label: 'test' } } : { error: { message: 'invalid key' } }) });
+      return antworte({ status: ok ? 200 : 401, body: JSON.stringify(ok ? { data: { label: 'test' } } : { error: { message: 'invalid key' } }) });
     }
     if (pfad === '/api/v1/models') {
-      return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ data: [
+      return antworte({ body: JSON.stringify({ data: [
         { id: 'nvidia/nemotron-3.5-super-vl:free', name: 'Nemotron VL (free)', architecture: { input_modalities: ['text', 'image'] }, pricing: { prompt: '0', completion: '0' } },
         { id: 'google/gemma-4-31b-it:free', name: 'Gemma 4 (free)', architecture: { input_modalities: ['text', 'image'] }, pricing: { prompt: '0', completion: '0' } },
         { id: 'teuer/modell', name: 'Kostet Geld', architecture: { input_modalities: ['text', 'image'] }, pricing: { prompt: '0.000002', completion: '0.00001' } }
@@ -99,10 +103,10 @@ export async function kiNachbauen(page, antworten) {
       const body = JSON.parse(req.postData());
       anfragen.push(body);
       const a = antworten[Math.min(anfragen.length - 1, antworten.length - 1)];
-      if (a.status) return route.fulfill({ status: a.status, contentType: 'application/json', body: JSON.stringify({ error: { message: a.text || 'Fehler', code: a.status } }) });
-      return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ choices: [{ finish_reason: 'stop', message: { content: a.inhalt } }] }) });
+      if (a.status) return antworte({ status: a.status, body: JSON.stringify({ error: { message: a.text || 'Fehler', code: a.status } }) });
+      return antworte({ body: JSON.stringify({ choices: [{ finish_reason: 'stop', message: { content: a.inhalt } }] }) });
     }
-    return route.fulfill({ status: 404, body: '{}' });
+    return antworte({ status: 404, body: '{}' });
   });
   return anfragen;
 }
