@@ -24,7 +24,7 @@ function isoGestern() { const d = new Date(); d.setDate(d.getDate() - 1); return
 
 export async function hole(profilId) {
   const b = (await db.get('belohnungen', profilId)) || { profilId, punkte: 0, serie: { aktuell: 0, rekord: 0 }, abzeichen: [] };
-  b.zaehler = { richtig: 0, satzbau: 0, formen: 0, sitzungen: 0, tests: 0, ...(b.zaehler || {}) };
+  b.zaehler = { richtig: 0, satzbau: 0, formen: 0, sitzungen: 0, tests: 0, lerntage: 0, ...(b.zaehler || {}) };
   b.serie = { aktuell: 0, rekord: 0, ...(b.serie || {}) };
   b.abzeichen ||= [];
   b.punkteTag ||= {};
@@ -35,6 +35,7 @@ function serieAktualisieren(b) {
   const h = isoHeute();
   const letzter = b.serie.letzterLerntag;
   if (letzter === h) return;
+  b.zaehler.lerntage = (b.zaehler.lerntage || 0) + 1;   // für Gutscheine „Lerntage“
   b.serie.aktuell = letzter === isoGestern() ? b.serie.aktuell + 1 : 1;
   b.serie.rekord = Math.max(b.serie.rekord, b.serie.aktuell);
   b.serie.letzterLerntag = h;

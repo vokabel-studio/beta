@@ -205,6 +205,7 @@ export async function homeView(_p, ctx) {
   const erinnerung = await erinnerungFaellig();
   const [fz, termin, bel] = await Promise.all([nVok ? L.faelligZahlen(ctx.profil) : { faellig: 0, neu: 0, neuHeute: 0 }, naechsterTermin(ctx.profil.id), hole(ctx.profil.id)]);
   const offen = LV.offeneSitzung(ctx.profil.id);
+  const gutscheine = await (await import('./gutscheine.js')).offene(ctx.profil.id);
   const tb = termin ? tageBis(termin.datum) : 0;
   const heuteInfo = {
     faellig: fz.faellig, neu: fz.neu, neuHeute: fz.neuHeute, punkte: bel.punkte, serie: bel.serie.letzterLerntag ? bel.serie.aktuell : 0, termin,
@@ -219,6 +220,7 @@ export async function homeView(_p, ctx) {
     <h2 style="margin-top:4px">Hallo ${esc(ctx.profil.name)}! ${avatarHtml(ctx.profil.avatar, 22)}</h2>
     <p class="muted">${plural(units.length, 'Unit', 'Units')} · ${plural(nVok, 'Vokabel', 'Vokabeln')} auf diesem Gerät</p>
     ${erinnerung ? `<a class="msg warn" href="#/backup" style="display:block;text-decoration:none">💾 ${erinnerung.seit === null ? 'Du hast noch nie gesichert.' : `Letzte Sicherung vor ${erinnerung.seit} Tagen.`} <strong>Jetzt sichern ›</strong></a>` : ''}
+    ${gutscheine.length ? `<a class="msg ok" href="#/erfolge" style="display:block;text-decoration:none">🎟️ Du hast ${gutscheine.length === 1 ? 'einen Gutschein' : `${gutscheine.length} Gutscheine`} zum Einlösen: <strong>${esc(gutscheine.map((g) => g.text).join(', '))}</strong> ›</a>` : ''}
     ${offen ? LV.fortsetzenKarte(offen) : ''}
     ${nVok ? `<div class="card heute">
       <div class="check-head"><strong class="grow">Heute</strong>${heuteInfo.serie ? `<span class="badge warn">🔥 ${heuteInfo.serie}</span>` : ''}</div>

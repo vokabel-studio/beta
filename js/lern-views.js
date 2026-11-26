@@ -76,6 +76,7 @@ export async function lernenView({ query }, ctx) {
       ${modusKachel('frei', '✍️', 'Eigene Sätze', 'vom Chatbot prüfen lassen')}
       ${modusKachel('formen', '🏛️', 'Latein-Formen', 'Deklination, Konjugation, Stammformen', 'h-formen')}
       ${modusKachel('test', '📝', 'Abschlusstest', 'mit Prozent & Einschätzung')}
+      <button class="tile" id="h-auto"><span class="tile-icon">🚗</span><span class="tile-title">Hör-Quiz</span><span class="tile-sub">fürs Auto: hören & laut antworten</span></button>
       <button class="tile" id="h-druck"><span class="tile-icon">🖨️</span><span class="tile-title">Test drucken</span><span class="tile-sub">als PDF oder Papier</span></button>
     </div>`;
   return {
@@ -89,6 +90,7 @@ export async function lernenView({ query }, ctx) {
         $('#h-sb', root).hidden = !sb;
         $$('.tile[data-modus]', root).forEach((t) => t.toggleAttribute('disabled', !ids.length));
         $('#h-faellig', root).disabled = !ids.length;
+        $('#h-auto', root).toggleAttribute('disabled', !ids.length);
         if (!ids.length) { $('#h-info', root).textContent = 'Wähle mindestens eine Unit.'; return; }
         const z = await L.faelligZahlen(ctx.profil, { unitIds: ids, richtungOverride: H.richtung || null });
         $('#h-info', root).textContent = `${plural(z.faellig, 'Vokabel', 'Vokabeln')} fällig · ${z.neuHeute} neue für heute`
@@ -101,6 +103,7 @@ export async function lernenView({ query }, ctx) {
       $('#h-faellig', root).onclick = () => starte({ modus: 'faellig' }, ctx);
       $$('.tile[data-modus]', root).forEach((t) => t.onclick = () => starte({ modus: t.dataset.modus }, ctx));
       bindFortsetzen(root, ctx);
+      $('#h-auto', root).onclick = () => { if (H.auswahl.size) ctx.go(`hoerquiz?units=${[...H.auswahl].join(',')}&richtung=${H.richtung || ''}&anzahl=${H.anzahl}`); };
       $('#h-druck', root).onclick = () => ctx.go(`druck?units=${[...H.auswahl].join(',')}&n=${H.anzahl || 0}&richtung=${H.richtung || 'beide'}`);
       aktualisiere();
     }
@@ -615,9 +618,13 @@ async function endeView(ctx) {
     } else res = await nachSitzung(S.profilId, { maxSerie: S.maxSerie });
     S.punkte += res.punkte;
     S.neueAbzeichen.push(...res.neueAbzeichen);
+    // Gutscheine der Eltern: neu freigeschaltete?
+    const G = await import('./gutscheine.js');
+    const gutscheine = await G.pruefe(S.profilId).catch(() => []);
+    if (gutscheine.length) setTimeout(() => G.feiere(gutscheine), 1200);
     if (S.cfg.terminRef) await markiereTerminAufgabe(S.cfg.terminRef);
     import('./sicherung.js').then((m) => m.autoSicherung()).then((r) => { if (r?.ok) toast('💾 Automatisch gesichert'); }).catch(() => {});
-    S.ende = { richtig, gesamt: gewertet.length, prozent, schwach };
+    S.ende = { richtig, gesamt: gewertet.length, prozent, schwach, gutscheine, gsHtml: gutscheine.map((f) => G.gutscheinHtml(f)).join('') };
     merkeSitzung();   // Übung fertig → nicht mehr zum Fortsetzen anbieten
     // Erfolgs-Animationen (nur wenn eingeschaltet)
     if (S.cfg.modus === 'test' ? prozent >= 75 : prozent >= 80 && gewertet.length >= 5) setTimeout(() => fx.konfetti(prozent >= 100 ? 3 : prozent >= 90 ? 2 : 1), 300);
@@ -634,6 +641,8 @@ async function endeView(ctx) {
         : `<h2>Geschafft!</h2><p>${E.richtig} von ${E.gesamt} richtig${E.gesamt ? ` (${E.prozent} %)` : ''}</p>`}
       <p><strong>${emo('punkt')} ${S.punkte} Punkte</strong> gesammelt${S.maxSerie >= 3 ? ` · ${emo('serie')} beste Serie: ${S.maxSerie}` : ''}</p>
     </div>
+    ${E.gutscheine?.length ? `<div class="card"><h3 style="margin-top:0">🎟️ ${E.gutscheine.length === 1 ? 'Neuer Gutschein' : 'Neue Gutscheine'}!</h3>${E.gsHtml}
+      <p class="small muted">Zeig ihn deinen Eltern. Du findest ihn unter <a href="#/erfolge">Erfolge</a>.</p></div>` : ''}
     ${S.neueAbzeichen.length ? `<div class="card"><h3 style="margin-top:0">Neue Abzeichen</h3>${S.neueAbzeichen.map((a) => `<p>${a.icon} <strong>${esc(a.name)}</strong> – ${esc(a.text)}</p>`).join('')}</div>` : ''}
     ${E.schwach.length ? `<div class="card"><h3 style="margin-top:0">Schwache Vokabeln (${E.schwach.length})</h3><ul class="list">
       ${E.schwach.map((v) => `<li class="list-item"><span class="grow"><span class="vok-wort">${esc(v.wort)}</span><br><span class="vok-de">${esc(v.bedeutungen.join('; '))}</span></span></li>`).join('')}</ul>

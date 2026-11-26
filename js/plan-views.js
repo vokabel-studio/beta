@@ -229,6 +229,17 @@ export async function erfolgeView(_p, ctx) {
   const b = await holeBelohnung(ctx.profil.id);
   const stat = await L.kastenStatistik(ctx.profil.id, await L.profilUnitIds(ctx.profil));
   const hat = new Map(b.abzeichen.map((a) => [a.id, a]));
+  const G = await import('./gutscheine.js');
+  const { b: gb, tests } = await G.daten(ctx.profil.id);
+  const offen = gb.freigeschaltet.filter((f) => !f.eingeloestAm).sort((x, y) => y.am.localeCompare(x.am));
+  const aktive = gb.gutscheine.filter((g) => !g.erledigt);
+  const eingeloest = gb.freigeschaltet.filter((f) => f.eingeloestAm).sort((x, y) => y.eingeloestAm.localeCompare(x.eingeloestAm));
+  const gsHtml = offen.length || aktive.length || eingeloest.length ? `
+    <h3>🎟️ Meine Gutscheine</h3>
+    ${offen.map((f) => `<div data-gs="${esc(f.id)}">${G.gutscheinHtml(f, `<div class="small muted">freigeschaltet am ${datum(f.am)}</div><button class="btn gs-knopf" data-einloesen="${esc(f.id)}">Einlösen</button>`)}</div>`).join('')}
+    ${aktive.length ? `<div class="card" style="padding:4px 14px">${aktive.map((g) => G.fortschrittHtml(g, gb, tests)).join('')}</div>` : ''}
+    ${eingeloest.length ? `<details class="card"><summary>Schon eingelöst (${eingeloest.length})</summary><ul class="small">
+      ${eingeloest.map((f) => `<li>${esc(f.emoji)} ${esc(f.text)} – eingelöst am ${datum(f.eingeloestAm)}</li>`).join('')}</ul></details>` : ''}` : '';
   const html = `
     <div class="grid">
       <div class="card stat"><div class="big">${E('punkt')}</div><div class="zahl">${b.punkte}</div><div class="muted small">Punkte</div></div>
@@ -236,11 +247,39 @@ export async function erfolgeView(_p, ctx) {
       <div class="card stat"><div class="big">🧠</div><div class="zahl">${stat.sicher}</div><div class="muted small">Vokabeln sicher</div></div>
       <div class="card stat"><div class="big">🏅</div><div class="zahl">${b.abzeichen.length}/${ABZEICHEN.length}</div><div class="muted small">Abzeichen</div></div>
     </div>
+    ${gsHtml}
     <h3>Abzeichen</h3>
     <div class="abzeichen">${ABZEICHEN.map((a) => `<div class="card ${hat.has(a.id) ? '' : 'gesperrt'}">
       <div class="big">${a.icon}</div><strong>${esc(a.name)}</strong><div class="small muted">${esc(a.text)}</div>
       ${hat.has(a.id) ? `<div class="small" style="color:var(--ok)">✓ ${datum(hat.get(a.id).erhaltenAm)}</div>` : ''}</div>`).join('')}</div>`;
-  return { title: 'Meine Erfolge', back: 'home', html };
+  return {
+    title: 'Meine Erfolge', back: 'home', html,
+    bind(root) {
+      // Einlösen nur mit Eltern-PIN (falls festgelegt)
+      $$('[data-einloesen]', root).forEach((btn) => btn.onclick = async () => {
+        const fid = btn.dataset.einloesen;
+        const loesen = async () => { await G.einloesen(ctx.profil.id, fid); toast('Eingelöst ✓ Viel Spaß!'); ctx.rerender(); };
+        if (!(await db.getMeta('elternPin'))) {
+          if (confirm('Gutschein als eingelöst markieren? (Tipp für Eltern: Mit einer Eltern-PIN geht das nur mit euch.)')) await loesen();
+          return;
+        }
+        const box = document.createElement('div');
+        box.className = 'card gs-pin';
+        box.innerHTML = `<p style="margin-top:0"><strong>Eltern:</strong> PIN eingeben, um den Gutschein einzulösen.</p>
+          <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" style="text-align:center;font-size:24px;letter-spacing:6px">
+          <div class="btn-row"><button class="btn">Einlösen</button><button class="btn secondary">Abbrechen</button></div>`;
+        root.querySelector('.gs-pin')?.remove();
+        btn.closest('[data-gs]').after(box);
+        const inp = box.querySelector('input');
+        const [ok, ab] = box.querySelectorAll('button');
+        const pruefen = async () => { if (await pinPruefen(inp.value)) await loesen(); else { toast('Falsche PIN.'); inp.value = ''; } };
+        ok.onclick = pruefen;
+        inp.onkeydown = (e) => { if (e.key === 'Enter') pruefen(); };
+        ab.onclick = () => box.remove();
+        inp.focus();
+      });
+    }
+  };
 }
 
 // ================= Eltern-Ansicht =================
@@ -251,6 +290,12 @@ export function elternSperren() { elternOffen = false; }
 async function hash(pin, salt) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(salt + ':' + pin));
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+/** Eltern-PIN prüfen: true/false, null = keine PIN festgelegt */
+export async function pinPruefen(pin) {
+  const rec = await db.getMeta('elternPin');
+  if (!rec) return null;
+  return (await hash(pin, rec.salt)) === rec.hash;
 }
 
 export async function elternView(_p, ctx) {
@@ -328,6 +373,23 @@ export async function elternView(_p, ctx) {
       ${schwer.length ? `<h4 class="muted small">SCHWIERIGSTE WÖRTER</h4><ul class="small">${schwer.map((s) => `<li>${esc(s.v.wort)} – ${esc(s.v.bedeutungen[0])} (${s.n}× falsch)</li>`).join('')}</ul>` : ''}
     </div>`;
   }));
+  const G = await import('./gutscheine.js');
+  const gsDaten = await Promise.all(profile.map(async (p) => ({ p, ...(await G.daten(p.id)) })));
+  const gsListe = gsDaten.map(({ p, b, tests }) => {
+    const offen = b.freigeschaltet.filter((f) => !f.eingeloestAm);
+    const aktive = b.gutscheine.filter((g) => !g.erledigt);
+    if (!offen.length && !aktive.length) return '';
+    return `<h4 style="margin:14px 0 6px">${avatarHtml(p.avatar, 20)} ${esc(p.name)}</h4>
+      ${offen.map((f) => G.gutscheinHtml(f, `<div class="small muted">freigeschaltet am ${datum(f.am)}</div><button class="btn ok gs-knopf" data-gs-ein="${esc(p.id)}|${esc(f.id)}">✓ Als eingelöst markieren</button>`)).join('')}
+      ${aktive.map((g) => `<div class="gs-mit-weg">${G.fortschrittHtml(g, b, tests)}<button class="btn danger klein-weg" data-gs-weg="${esc(p.id)}|${esc(g.id)}" aria-label="Gutschein löschen">🗑️</button></div>`).join('')}`;
+  }).join('');
+  const gsKarte = `<div class="card" id="gs-karte">
+      <h3 style="margin-top:0">🎟️ Gutscheine</h3>
+      <p class="small">Eigene Belohnungen mit eigenem Text, z. B. „Cheeseburger bei McDonald's“ oder „15 Minuten extra Gaming“. Dein Kind schaltet sie durch Lernen frei, sieht den Fortschritt unter „Erfolge“ und bekommt am Ende der Übung eine große Einblendung. Einlösen geht nur mit deiner PIN.</p>
+      ${gsListe || '<p class="muted small">Noch keine Gutscheine angelegt.</p>'}
+      <div id="gs-form"></div>
+      <button class="btn soft block" id="gs-neu" style="margin-top:12px">➕ Neuen Gutschein anlegen</button>
+    </div>`;
   const K = await import('./ki.js');
   const ki = await K.einstellungen();
   const reihe = K.reihenfolge(ki);
@@ -346,6 +408,7 @@ export async function elternView(_p, ctx) {
     </div>`;
   };
   const html = `${karten.join('') || '<div class="card muted">Noch keine Profile.</div>'}
+    ${profile.length ? gsKarte : ''}
     <div class="card" id="ki-karte">
       <h3 style="margin-top:0">🤖 KI-Anbindung <span class="badge">optional</span></h3>
       <p class="small">Mit eigenem, kostenlosem Zugangsschlüssel wertet die App Fotos der Vokabelseite <strong>selbst</strong> aus und prüft eigene Sätze. Schlüssel bleiben nur auf diesem Gerät und kommen <strong>nicht</strong> in die Sicherungsdatei.</p>
@@ -361,6 +424,58 @@ export async function elternView(_p, ctx) {
     title: 'Eltern-Ansicht', back: 'home', html,
     bind(root) {
       $('#el-zu', root).onclick = () => { elternOffen = false; ctx.go('home'); };
+      // ----- Gutscheine -----
+      $$('[data-gs-ein]', root).forEach((b) => b.onclick = async () => { const [pid, fid] = b.dataset.gsEin.split('|'); await G.einloesen(pid, fid); toast('Als eingelöst markiert ✓'); ctx.rerender(); });
+      $$('[data-gs-weg]', root).forEach((b) => b.onclick = async () => {
+        if (!confirm('Diesen Gutschein löschen? Schon freigeschaltete Gutscheine bleiben erhalten.')) return;
+        const [pid, gid] = b.dataset.gsWeg.split('|'); await G.loesche(pid, gid); toast('Gelöscht.'); ctx.rerender();
+      });
+      const gsNeu = $('#gs-neu', root);
+      if (gsNeu) gsNeu.onclick = () => {
+        gsNeu.hidden = true;
+        const vorschlag = { tests: 10, uebungen: 20, lerntage: 10, serie: 7, punkte: 1000 };
+        $('#gs-form', root).innerHTML = `<div class="card" style="border:2px solid var(--primary);margin-top:12px">
+          <label for="gs-text" style="margin-top:0">Was gibt es?</label>
+          <input id="gs-text" type="text" maxlength="60" placeholder="z. B. Cheeseburger bei McDonald's">
+          <label>Symbol</label>
+          <div class="emoji-pick" id="gs-emojis">${G.EMOJIS.map((e) => `<button type="button" data-e="${e}" class="${e === '🎁' ? 'on' : ''}" aria-label="Symbol ${e}">${e}</button>`).join('')}</div>
+          <label for="gs-fuer">Für wen?</label>
+          <select id="gs-fuer">${profile.length > 1 ? '<option value="">alle Kinder (jedes für sich)</option>' : ''}${profile.map((p) => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}</select>
+          <label for="gs-art">Wofür?</label>
+          <select id="gs-art">${Object.entries(G.ARTEN).map(([k, a]) => `<option value="${k}">${esc(a.name)}</option>`).join('')}</select>
+          <div class="field-row">
+            <div><label for="gs-anzahl">Wie viele?</label><input id="gs-anzahl" type="number" inputmode="numeric" min="1" max="100000" value="10"></div>
+            <div id="gs-min-feld"><label for="gs-min">Bestanden ab</label><select id="gs-min"><option value="75">75 %</option><option value="90">90 %</option><option value="100">100 %</option></select></div>
+          </div>
+          <label class="switch" style="margin-top:12px"><input type="checkbox" id="gs-wdh" checked> <span id="gs-wdh-text">Immer wieder – jedes Mal, wenn das Ziel erneut erreicht ist</span></label>
+          <p class="muted small">Gezählt wird ab jetzt. Ein Test zählt höchstens einmal pro Tag und Unit – so lohnt es sich nicht, denselben leichten Test zehnmal zu machen.</p>
+          <div class="btn-row"><button class="btn" id="gs-save">Gutschein anlegen</button><button class="btn secondary" id="gs-ab">Abbrechen</button></div></div>`;
+        let emoji = '🎁';
+        $$('#gs-emojis [data-e]', root).forEach((b) => b.onclick = () => { emoji = b.dataset.e; $$('#gs-emojis [data-e]', root).forEach((x) => x.classList.toggle('on', x === b)); });
+        const artWechsel = () => {
+          const art = $('#gs-art', root).value;
+          $('#gs-min-feld', root).hidden = art !== 'tests';
+          $('#gs-anzahl', root).value = vorschlag[art];
+          const nur1 = G.ARTEN[art].nurEinmalig;
+          $('#gs-wdh', root).disabled = nur1; if (nur1) $('#gs-wdh', root).checked = false;
+        };
+        $('#gs-art', root).onchange = artWechsel;
+        artWechsel();
+        $('#gs-ab', root).onclick = () => { $('#gs-form', root).innerHTML = ''; gsNeu.hidden = false; };
+        $('#gs-save', root).onclick = async () => {
+          const text = $('#gs-text', root).value.trim();
+          const anzahl = Math.round(+$('#gs-anzahl', root).value);
+          if (!text) { toast('Bitte eintragen, was es gibt.'); $('#gs-text', root).focus(); return; }
+          if (!(anzahl >= 1)) { toast('Bitte eine Anzahl ab 1 eingeben.'); return; }
+          const fuer = $('#gs-fuer', root).value;
+          await G.erstelle(fuer ? [fuer] : profile.map((p) => p.id), {
+            text, emoji, art: $('#gs-art', root).value, anzahl, minProzent: +$('#gs-min', root).value, wiederholen: $('#gs-wdh', root).checked
+          });
+          toast('Gutschein angelegt 🎟️');
+          ctx.rerender();
+        };
+        $('#gs-text', root).focus();
+      };
       // ----- KI-Anbindung -----
       $$('[data-haupt]', root).forEach((b) => b.onclick = async () => { await K.setzeHaupt(b.dataset.haupt); toast('Hauptanbieter geändert.'); ctx.rerender(); });
       $$('[data-weg]', root).forEach((b) => b.onclick = async () => {

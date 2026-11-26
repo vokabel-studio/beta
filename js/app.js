@@ -7,6 +7,7 @@ import { importView } from './import-view.js';
 import { lernenView, uebungView } from './lern-views.js';
 import * as P from './plan-views.js';
 import * as T from './teilen-views.js';
+import { hoerquizView } from './hoerquiz.js';
 import { BETA, LS_PREFIX } from './config.js';
 import { setzeDesign } from './design.js';
 import { setzeStyle, style } from './styles.js';
@@ -33,6 +34,7 @@ const ROUTES = [
   ['einstellungen', V.einstellungenView],
   ['lernen', lernenView],
   ['uebung', uebungView],
+  ['hoerquiz', hoerquizView],
   ['plan', P.planView],
   ['termin-neu', P.terminFormView],
   ['termin/:id', P.terminView],
