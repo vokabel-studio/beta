@@ -74,6 +74,7 @@ export async function profileView(_p, ctx) {
       <label class="btn secondary block" for="pv-sicherung">📂 Sicherung laden</label>
       <input id="pv-sicherung" type="file" accept=".json,application/json" hidden>
       <a class="btn secondary block" href="#/qr-empfangen" style="margin-top:10px">📲 Von einem anderen Handy übertragen (QR-Code)</a>
+      <p class="small" style="margin-bottom:0"><a href="#/datenschutz">🔒 Datenschutz: Alle Daten bleiben auf diesem Gerät – mehr erfahren</a></p>
       <div id="pv-info"></div></div>`}
     <div class="profile-grid">
       ${profile.map((p) => `
@@ -1024,7 +1025,7 @@ export async function einstellungenView(_p, ctx) {
       <p class="small">${esc(speicher || 'keine Angabe')}</p>
       <button class="btn secondary block" id="st-persist">Daten vor automatischem Löschen schützen</button>
     </div>
-    <p class="muted small" style="text-align:center">Vokabel-Studio · Version ${esc(APP_VERSION)} · Alle Daten bleiben auf diesem Gerät.</p>`;
+    <p class="muted small" style="text-align:center">Vokabel-Studio · Version ${esc(APP_VERSION)}<br><a href="#/datenschutz">Datenschutz & Sicherheit</a></p>`;
   return {
     title: 'Einstellungen', back: 'home', html,
     bind(root) {

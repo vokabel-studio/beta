@@ -165,7 +165,7 @@ async function microsoftNachbauen(context, cloud) {
     if (pfad.endsWith('/me')) return json(route, 200, { mail: 'familie@example.com' });
     if (pfad.endsWith('vokabel-studio-sync.json') && req.method() === 'GET') {
       if (!cloud.datei) return json(route, 404, { error: { code: 'itemNotFound' } });
-      return json(route, 200, { eTag: `"e${cloud.etag}"`, '@microsoft.graph.downloadUrl': `https://download.example.com/datei?e=${cloud.etag}` });
+      return json(route, 200, { eTag: `"e${cloud.etag}"`, '@microsoft.graph.downloadUrl': `https://test.files.1drv.com/datei?e=${cloud.etag}` });
     }
     if (pfad.endsWith('vokabel-studio-sync.json:/content') && req.method() === 'PUT') {
       const ifMatch = (await req.allHeaders())['if-match'];
@@ -178,7 +178,7 @@ async function microsoftNachbauen(context, cloud) {
     }
     return json(route, 404, {});
   });
-  await context.route('https://download.example.com/**', (route) => route.fulfill({ status: 200, contentType: 'application/json', headers: CORS, body: cloud.datei || '{}' }));
+  await context.route('https://test.files.1drv.com/**', (route) => route.fulfill({ status: 200, contentType: 'application/json', headers: CORS, body: cloud.datei || '{}' }));
 }
 
 async function oneDriveFreischalten(page) {

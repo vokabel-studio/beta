@@ -528,3 +528,12 @@ details.anbieter > summary { list-style: none; gap: 8px; }
 details.anbieter > summary::-webkit-details-marker { display: none; }
 details.anbieter > summary::after { content: '›'; margin-left: auto; font-size: 24px; color: var(--muted); transition: transform .15s; }
 details.anbieter[open] > summary::after { transform: rotate(90deg); }
+
+/* Textseiten (Datenschutz) */
+.text-seite h3 { font-size: 17px; margin: 18px 0 6px; }
+.text-seite p, .text-seite li { line-height: 1.55; }
+.text-seite ul { padding-left: 20px; }
+.tabelle-scroll { overflow-x: auto; }
+.info-tabelle { border-collapse: collapse; width: 100%; font-size: 15px; }
+.info-tabelle th, .info-tabelle td { text-align: left; vertical-align: top; padding: 8px 6px; border-bottom: 1px solid var(--line); }
+.info-tabelle th { color: var(--muted); font-weight: 600; }

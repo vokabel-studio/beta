@@ -1,7 +1,7 @@
 # Vokabel-Studio
 
 Vokabel-Lern-App für Schülerinnen und Schüler am Gymnasium (NRW), Englisch und Latein.
-Web-App (PWA) für iPhone, iPad und Android, alle Daten bleiben lokal auf dem Gerät. KI-Auswertung ist optional (eigener Gratis-Schlüssel, bleibt auf dem Gerät).
+Web-App (PWA) für iPhone, iPad und Android, alle Daten bleiben lokal auf dem Gerät. KI-Auswertung und Cloud-Abgleich sind optional. Details: in der App unter „Für Eltern › Datenschutz & Sicherheit“.
 
 **App öffnen:** https://vokabel-studio.github.io/
 
@@ -32,6 +32,7 @@ Wichtig: Safari und die Home-Bildschirm-App haben getrennte Speicher. Am besten 
 | + | OpenRouter als vierter kostenloser KI-Anbieter (nur Gratis-Modelle), Einlesen per kopiertem Text (Google Lens / Live Text) statt Foto | ✅ (Beta) |
 | + | Geräte abgleichen: Handy zu Handy per QR-Code (offline), automatisch über OneDrive; Zusammenführen statt Überschreiben, Gelöscht-Liste. Google Drive, Dropbox, WebDAV geplant | ✅ (Beta) |
 | + | Bedienung überarbeitet (Startseite, „Sichern & Abgleichen“), Textgröße einstellbar, Barrierefreiheit nach WCAG 2.2 AA (automatisch geprüft für alle Styles, hell und dunkel) | ✅ (Beta) |
+| + | Datenschutz & Sicherheit: Elterninformation und Datenschutzerklärung in der App, Content-Security-Policy (App spricht nur mit KI-Anbietern und Microsoft) | ✅ (Beta) |
 
 **Bekannte Einschränkung iPhone/iPad:** Die Spracheingabe der App liefert unter iOS nur beim ersten Versuch nach dem App-Start Ton (Gerätetests Nov. 2026). Auf iOS wird deshalb das Tastatur-Diktat empfohlen; der App-Mikrofonknopf ist dort ausgeblendet.
 

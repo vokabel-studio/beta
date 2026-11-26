@@ -11,7 +11,7 @@ export const test = basis.extend({
     page.on('pageerror', (e) => fehler.push(e.message));
     page.on('console', (m) => {
       // „Failed to load resource“ entsteht bei absichtlich nachgebauten Fehlern (z. B. KI überlastet)
-      if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) fehler.push(m.text());
+      if (m.type() === 'error' && !/Failed to load resource|boese\.example\.com/.test(m.text())) fehler.push(m.text());   // boese.example.com: absichtlich blockierter Aufruf im Sicherheitstest
     });
     page.on('dialog', (d) => d.accept(d.type() === 'prompt' ? (page.promptAntwort ?? '') : undefined));
     await use(page);
@@ -26,14 +26,15 @@ export async function geh(page, pfad) {
   await page.goto('#/' + pfad);
 }
 
-/** Code im Browser mit den Modulen der App ausführen: app((m) => …, arg) – m.db, m.L (lernen), … */
+/** Code im Browser mit den Modulen der App ausführen: app((m) => …, arg) – m.db, m.L (lernen), …
+ *  Ohne eval/new Function im Browser (die Sicherheitsregel der App verbietet das): Der Ausdruck wird als Ganzes übergeben. */
 export async function app(page, fn, arg) {
-  return page.evaluate(async ([quelle, a]) => {
-    const lade = (n) => import(new URL(`js/${n}.js`, document.baseURI).href);
+  const ausdruck = `(async () => {
+    const lade = (n) => import(new URL('js/' + n + '.js', document.baseURI).href);
     const m = { db: await lade('db'), L: await lade('lernen'), B: await lade('belohnung'), backup: await lade('backup'), G: await lade('gutscheine') };
-    // eslint-disable-next-line no-new-func
-    return new Function('m', 'a', `return (${quelle})(m, a);`)(m, a);
-  }, [fn.toString(), arg]);
+    return (${fn.toString()})(m, ${arg === undefined ? 'undefined' : JSON.stringify(arg)});
+  })()`;
+  return page.evaluate(ausdruck);
 }
 
 export const alle = (page, store) => app(page, (m, s) => m.db.all(s), store);

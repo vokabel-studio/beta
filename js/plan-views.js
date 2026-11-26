@@ -306,12 +306,14 @@ export async function elternView(_p, ctx) {
         <p>Eltern-Bereich. Bitte PIN eingeben.</p>
         <input id="el-pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" style="text-align:center;font-size:28px;letter-spacing:8px">
         <button class="btn block" id="el-ok" style="margin-top:12px">Öffnen</button>
-        <p class="muted small">PIN vergessen? Unter Sicherung › Gefahrenzone alles löschen und neu einrichten – oder Sicherung laden.</p></div>`
+        <p class="muted small">PIN vergessen? Unter Sichern & Abgleichen › Gefahrenzone alles löschen und neu einrichten – oder eine Sicherungsdatei laden.</p></div>
+      <p class="small" style="text-align:center"><a href="#/datenschutz">🔒 Datenschutz & Sicherheit</a></p>`
       : `<div class="card"><h2 data-h="3" style="margin-top:0">Eltern-PIN festlegen</h2>
         <p>Mit der PIN schützt du die Eltern-Ansicht. Kinder sehen sie dann nicht ohne dich.</p>
         <input id="el-neu" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="4–8 Ziffern">
         <input id="el-neu2" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="PIN wiederholen" style="margin-top:8px">
-        <button class="btn block" id="el-set" style="margin-top:12px">PIN speichern</button></div>`;
+        <button class="btn block" id="el-set" style="margin-top:12px">PIN speichern</button></div>
+      <div class="msg info small">Bevor Sie Profile, KI-Anbindung oder Cloud-Abgleich einrichten: <a href="#/datenschutz">Was passiert mit den Daten? – Datenschutz & Sicherheit lesen ›</a></div>`;
     return {
       title: 'Eltern', back: 'home', html,
       bind(root) {
@@ -419,6 +421,8 @@ export async function elternView(_p, ctx) {
       ${reihe.length ? '<div class="btn-row"><button class="btn secondary" id="ki-test">Verbindung testen</button></div><div id="ki-test-erg"></div>' : ''}
       <p class="small muted">Gratis-Angebote ändern sich häufig. Der Weg über Kopieren und Einfügen bleibt immer möglich.</p>
     </div>
+    <a class="card list-item" href="#/datenschutz" style="margin:12px 0"><span class="mehr-icon" aria-hidden="true">🔒</span><span class="grow"><span class="vok-wort">Datenschutz & Sicherheit</span><br>
+      <span class="vok-de">Was die App speichert, wohin Daten gehen, Datenschutzerklärung</span></span><span class="chev" aria-hidden="true">›</span></a>
     <div class="btn-row"><button class="btn secondary" id="el-zu">🔒 Schließen</button><button class="btn secondary" id="el-pinneu">PIN ändern</button></div>`;
   return {
     title: 'Eltern-Ansicht', back: 'home', html,

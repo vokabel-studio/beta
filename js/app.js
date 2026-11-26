@@ -9,6 +9,7 @@ import * as P from './plan-views.js';
 import * as T from './teilen-views.js';
 import { hoerquizView } from './hoerquiz.js';
 import { qrSendenView, qrEmpfangenView } from './abgleich-views.js';
+import { datenschutzView } from './datenschutz-views.js';
 import { BETA, LS_PREFIX } from './config.js';
 import { setzeDesign, setzeTextgroesse } from './design.js';
 import { setzeStyle, style } from './styles.js';
@@ -45,7 +46,8 @@ const ROUTES = [
   ['teilen', T.teilenView],
   ['paket-laden', T.paketLadenView],
   ['qr-senden', qrSendenView],
-  ['qr-empfangen', qrEmpfangenView]
+  ['qr-empfangen', qrEmpfangenView],
+  ['datenschutz', datenschutzView]
 ];
 
 function match(path) {

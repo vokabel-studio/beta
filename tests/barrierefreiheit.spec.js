@@ -26,7 +26,7 @@ for (const stil of ['standard', 'rock', 'pop', 'hiphop']) for (const design of [
       ['Start', 'home'], ['Profile', 'profile'], ['Neues Profil', 'profil-neu'], ['Bücher', 'bibliothek'], ['Buch', `lehrwerk/${en.lehrwerkId}`],
       ['Unit', `unit/${en.id}`], ['Unit bearbeiten', `unit-bearbeiten/${en.id}`], ['Vokabel', `vokabel/${vok.id}`], ['Vokabel bearbeiten', `vokabel-bearbeiten/${vok.id}`],
       ['Lernen', 'lernen'], ['Lernplan', 'plan'], ['Neuer Termin', 'termin-neu'], ['Erfolge', 'erfolge'], ['Sichern & Abgleichen', 'backup'],
-      ['Einstellungen', 'einstellungen'], ['Einlesen', 'import'], ['Teilen', 'teilen'], ['QR senden', 'qr-senden'], ['QR empfangen', 'qr-empfangen']
+      ['Einstellungen', 'einstellungen'], ['Einlesen', 'import'], ['Datenschutz', 'datenschutz'], ['Teilen', 'teilen'], ['QR senden', 'qr-senden'], ['QR empfangen', 'qr-empfangen']
     ];
     for (const [name, pfad] of seiten) {
       await geh(page, pfad);
