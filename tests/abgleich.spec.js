@@ -191,7 +191,9 @@ test.describe('OneDrive', () => {
     await microsoftNachbauen(page.context(), cloud);
     await profilAnlegen(page, 'Mia');
     await demoLaden(page);
+    await page.evaluate(() => localStorage.setItem('vs-onedrive-client-id', 'aus'));
     await geh(page, 'backup');
+    await page.reload();
     await expect(page.locator('[data-verbinden="onedrive"]')).toHaveCount(0);      // ohne Freischaltung kein Knopf
     await expect(page.getByText('Freischaltung bei Microsoft fehlt noch')).toBeVisible();
     await oneDriveFreischalten(page);

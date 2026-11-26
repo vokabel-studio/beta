@@ -4,7 +4,7 @@ export const BETA = /beta/i.test(location.pathname);
 export const DB_NAME = BETA ? 'vokabel-studio-beta' : 'vokabel-studio';
 export const LS_PREFIX = BETA ? 'vsb-' : 'vs-';
 // Gleiche Nummer wie VERSION in sw.js – bei jeder Änderung beide erhöhen.
-export const APP_VERSION = BETA ? '2.11.0-beta' : '2.11.0';
+export const APP_VERSION = BETA ? '2.11.1-beta' : '2.11.1';
 
 // Umzug (23.11.2026): neue Adresse in der GitHub-Organisation „vokabel-studio“.
 // Die alte Adresse bleibt vorerst erreichbar und zeigt einen Umzugshinweis, damit man dort noch eine Sicherung machen kann.
@@ -15,5 +15,5 @@ export const NEUE_ADRESSE = BETA ? 'https://vokabel-studio.github.io/beta/' : 'h
 // OneDrive: „Anwendungs-ID (Client)“ aus der App-Registrierung bei Microsoft (Microsoft Entra › App-Registrierungen).
 // Weiterleitungs-URIs dort als Typ „Single-Page-Anwendung“: https://vokabel-studio.github.io/ und https://vokabel-studio.github.io/beta/
 export const CLOUD = {
-  onedrive: ''
+  onedrive: '09734763-35cd-4acf-9567-ca06532069de'   // App-Registrierung „Vokabel-Studio“ (26.11.2026)
 };

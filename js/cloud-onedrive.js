@@ -18,7 +18,12 @@ export class CloudFehler extends Error {
 
 /** Client-ID der App-Registrierung bei Microsoft (öffentlich, kein Geheimnis) */
 export function clientId() {
-  try { return localStorage.getItem(LS_PREFIX + 'onedrive-client-id') || CLOUD.onedrive || ''; } catch { return CLOUD.onedrive || ''; }
+  // Für Tests überschreibbar; „aus“ = so tun, als wäre OneDrive nicht freigeschaltet
+  try {
+    const x = localStorage.getItem(LS_PREFIX + 'onedrive-client-id');
+    if (x === 'aus') return '';
+    return x || CLOUD.onedrive || '';
+  } catch { return CLOUD.onedrive || ''; }
 }
 export const eingerichtet = () => !!clientId();
 const rueckAdresse = () => location.origin + location.pathname;
