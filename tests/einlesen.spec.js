@@ -86,3 +86,16 @@ test('KI: alle Modelle überlastet → klare Meldung, Kopier-Weg bleibt', async 
   await expect(page.locator('#w-ki-status')).toContainText('Kein KI-Dienst hat geantwortet', { timeout: 40_000 });
   await expect(page.getByText('Ohne KI: über ChatGPT/Gemini kopieren')).toBeVisible();
 });
+
+test('KI: Foto wird wirklich als Bild an die KI geschickt', async ({ page }) => {
+  const anfragen = await kiNachbauen(page, [{ inhalt: '```json\n' + DEMO_EN + '\n```' }]);
+  await kiEinrichten(page);
+  await bisZumPrompt(page);
+  await page.setInputFiles('#w-fotos', 'icons/logo-96.png');
+  await uebernehmen(page);
+  const inhalt = anfragen[0].messages[0].content;
+  expect(Array.isArray(inhalt), 'Anfrage muss Text + Bild enthalten').toBe(true);
+  expect(inhalt.some((t) => t.type === 'image_url' && /^data:image\/jpeg;base64,/.test(t.image_url.url))).toBe(true);
+  expect(JSON.stringify(inhalt)).not.toContain('ES GIBT KEIN FOTO');
+  expect(await alle(page, 'vokabeln')).toHaveLength(16);
+});
