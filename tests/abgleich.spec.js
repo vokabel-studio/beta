@@ -148,7 +148,7 @@ async function microsoftNachbauen(context, cloud) {
       return route.fulfill({ status: 302, headers: { location: ziel.toString() } });
     }
     if (url.pathname.endsWith('/token')) {
-      const form = new URLSearchParams(req.postData() || '');
+      const form = new URLSearchParams(req.postData() ?? req.postDataBuffer()?.toString() ?? '');
       if (form.get('grant_type') === 'refresh_token' && !cloud.tokenGueltig) return json(route, 400, { error: 'invalid_grant' });
       if (form.get('grant_type') === 'authorization_code' && !form.get('code_verifier')) return json(route, 400, { error: 'invalid_request' });
       return json(route, 200, { access_token: 'tok', refresh_token: 'ref', expires_in: 3600 });
@@ -196,7 +196,8 @@ test.describe('OneDrive', () => {
     await oneDriveFreischalten(page);
     await page.reload();
     await page.click('[data-verbinden="onedrive"]');
-    await expect(page.locator('#toast')).toContainText('Mit OneDrive verbunden');
+    await expect(page.locator('#toast')).not.toBeEmpty();
+    expect(await page.locator('#toast').textContent(), 'Meldung der App nach der Anmeldung').toContain('Mit OneDrive verbunden');
     await expect(page).toHaveURL(/#\/backup$/);
     expect(page.url()).not.toContain('code=');
     await expect.poll(() => cloud.puts).toBe(1);
