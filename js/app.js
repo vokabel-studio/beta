@@ -159,8 +159,10 @@ export async function cloudAbgleich() {
   try {
     const C = await import('./cloud.js');
     const s = await C.autoAbgleich();
-    if (!s || !(s.neu + s.geaendert + s.geloescht)) return;
+    if (!s) return;
     const seite = location.hash.replace(/^#\/?/, '').split(/[/?]/)[0];
+    if (seite === 'backup') { render(); return; }   // Status „Zuletzt abgeglichen“ sofort zeigen
+    if (!(s.neu + s.geaendert + s.geloescht)) return;
     if (['', 'home', 'bibliothek', 'plan', 'erfolge', 'backup', 'profile'].includes(seite)) render();
     else toast('🔄 Neue Daten vom anderen Gerät übernommen.');
   } catch { /* Status steht unter Sicherung */ }
