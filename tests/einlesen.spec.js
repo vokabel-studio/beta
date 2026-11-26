@@ -52,7 +52,7 @@ test('KI: OpenRouter einrichten – falscher Schlüssel, nur Gratis-Modelle', as
   await page.click('#ki-laden');
   await expect(page.locator('#ki-modelle')).not.toContainText('ungültig');
   // nur die beiden Gratis-Modelle, nicht das kostenpflichtige
-  const meldung = page.locator('#ki-modelle .msg');
+  const meldung = page.locator('#ki-modelle .msg.err, #ki-modelle .msg.warn');
   await expect(page.locator('#ki-modell').or(meldung).first()).toBeVisible();
   if (await meldung.count()) throw new Error('Die App meldet: ' + (await meldung.first().innerText()));
   await expect(page.locator('#ki-modell option')).toHaveCount(2);
