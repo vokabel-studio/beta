@@ -24,12 +24,19 @@ export async function lernstandMap(profilId) {
 }
 export const holeLs = (map, profilId, vokabelId, richtung) => map.get(lsKey(profilId, vokabelId, richtung));
 
-/** ergebnis: 'richtig' | 'fast' | 'falsch'. Gibt { punkte, neueAbzeichen } zurück. */
+/**
+ * ergebnis: 'richtig' | 'fast' | 'falsch'. Gibt { punkte, neueAbzeichen } zurück.
+ * „fast“ (kleiner Tippfehler): Bei Deutsch → Fremdsprache zählt in der Vokabelarbeit die Rechtschreibung –
+ * die Vokabel steigt dann nicht auf, sondern kommt morgen wieder. Bei Fremdsprache → Deutsch zählt „fast“ wie richtig.
+ */
 export async function bewerte(profilId, vokabelId, richtung, ergebnis, { modus = 'abfrage', antwort = '', zaehlen = true } = {}) {
   const key = lsKey(profilId, vokabelId, richtung);
-  const ls = (await db.get('lernstand', key)) || { key, profilId, vokabelId, richtung, box: 0, richtig: 0, falsch: 0, serieRichtig: 0 };
-  const korrekt = ergebnis !== 'falsch';
-  if (korrekt) {
+  const ls = (await db.get('lernstand', key)) || { key, profilId, vokabelId, richtung, box: 0, richtig: 0, falsch: 0, serieRichtig: 0, erstmalsAm: heute() };
+  if (ergebnis === 'fast' && richtung === 'df') {
+    ls.box = Math.max(1, ls.box);
+    ls.richtig++; ls.serieRichtig = 0;
+    ls.faelligAm = plusTage(heute(), 1);
+  } else if (ergebnis !== 'falsch') {
     ls.box = Math.min(5, ls.box + 1);
     ls.richtig++; ls.serieRichtig++;
     ls.faelligAm = plusTage(heute(), INTERVALLE[ls.box]);
@@ -37,6 +44,7 @@ export async function bewerte(profilId, vokabelId, richtung, ergebnis, { modus =
     ls.box = 1; ls.falsch++; ls.serieRichtig = 0;
     ls.faelligAm = heute();          // heute noch einmal
   }
+  const korrekt = ergebnis !== 'falsch';
   ls.zuletzt = new Date().toISOString();
   await db.batch([
     { store: 'lernstand', op: 'put', value: ls },
@@ -170,33 +178,107 @@ export function richtungen(profil, uebersteuern) {
   return r === 'fremd-deutsch' || r === 'fd' ? ['fd'] : r === 'deutsch-fremd' || r === 'df' ? ['df'] : ['fd', 'df'];
 }
 
-/** Fällige und neue Paare (Vokabel × Richtung). */
-export async function faelligePaare(profil, { unitIds = null, richtungOverride = null, limitNeu = null } = {}) {
-  const ids = unitIds || (await db.all('units')).map((u) => u.id);
-  const voks = await vokabelnFuerUnits(ids);
-  const map = await lernstandMap(profil.id);
+/** Units, die zum Profil passen (Fächer im Profil). Ohne Fächerauswahl: alle. */
+export async function profilUnitIds(profil) {
+  const [units, lehrwerke] = await Promise.all([db.all('units'), db.all('lehrwerke')]);
+  const fach = new Map(lehrwerke.map((l) => [l.id, l.fachId]));
+  const f = profil?.fachIds;
+  return units.filter((u) => !f?.length || f.includes(fach.get(u.lehrwerkId))).map((u) => u.id);
+}
+
+async function vokabelIdsFuerUnits(unitIds) {
+  return (await Promise.all(unitIds.map((id) => db.keysByIndex('vokabeln', 'unitId', id)))).flat();
+}
+
+/** Wie viele Vokabeln hat das Profil heute zum ersten Mal gesehen? (für das Tagesziel) */
+function heuteNeuEingefuehrt(map) {
+  const h = heute(), ids = new Set();
+  for (const l of map.values()) if (l.erstmalsAm === h) ids.add(l.vokabelId);
+  return ids.size;
+}
+
+/**
+ * Kern: teilt Vokabel-IDs in fällige und neue Paare (Vokabel × Richtung).
+ * Neue Vokabeln werden auf das Tagesziel begrenzt („Neue Vokabeln pro Tag“) – gezählt wird über alle Sitzungen des Tages.
+ * Ist eine Vokabel in einer Richtung schon bekannt, zählt die andere Richtung nicht gegen das Tagesziel.
+ */
+function teile(profil, ids, map, richtungOverride, limitNeu) {
   const h = heute();
-  const faellig = [], neu = [];
-  for (const v of voks) {
-    for (const r of richtungen(profil, richtungOverride)) {
-      const ls = holeLs(map, profil.id, v.id, r);
-      if (!ls) neu.push({ v, richtung: r, box: 0 });
-      else if ((ls.faelligAm || h) <= h) faellig.push({ v, richtung: r, box: ls.box });
+  const rs = richtungen(profil, richtungOverride);
+  const faellig = [], neu = [], neuVokIds = new Set(), faelligVokIds = new Set();
+  for (const id of ids) {
+    const bekannt = ['fd', 'df'].some((r) => holeLs(map, profil.id, id, r));
+    for (const r of rs) {
+      const ls = holeLs(map, profil.id, id, r);
+      if (!ls) { neu.push({ id, richtung: r, box: 0, ganzNeu: !bekannt }); neuVokIds.add(id); }
+      else if ((ls.faelligAm || h) <= h) { faellig.push({ id, richtung: r, box: ls.box }); faelligVokIds.add(id); }
     }
   }
   faellig.sort((a, b) => a.box - b.box);
-  const lim = limitNeu ?? (profil.einstellungen?.tagesziel || 20);
-  return { faellig, neu: neu.slice(0, lim), neuGesamt: neu.length, alle: voks };
+  const ziel = limitNeu ?? (profil.einstellungen?.tagesziel || 20);
+  const rest = Math.max(0, ziel - heuteNeuEingefuehrt(map));
+  const erlaubt = new Set([...new Set(neu.filter((p) => p.ganzNeu).map((p) => p.id))].slice(0, rest));
+  const neuHeute = neu.filter((p) => !p.ganzNeu || erlaubt.has(p.id));
+  return {
+    faellig, neu: neuHeute, neuGesamt: neu.length,
+    // für Anzeigen: Anzahl Vokabeln (nicht Paare)
+    faelligVok: faelligVokIds.size, neuVok: neuVokIds.size, neuHeuteVok: new Set(neuHeute.map((p) => p.id)).size, tagesRest: rest
+  };
+}
+
+/** Nur Zahlen (lädt keine Vokabeln, nur deren IDs) – für Startseite, Lernplan, Lernen-Übersicht. */
+export async function faelligZahlen(profil, { unitIds = null, richtungOverride = null } = {}) {
+  const ids = await vokabelIdsFuerUnits(unitIds || (await profilUnitIds(profil)));
+  const t = teile(profil, ids, await lernstandMap(profil.id), richtungOverride);
+  return { faellig: t.faelligVok, neu: t.neuVok, neuHeute: t.neuHeuteVok, tagesRest: t.tagesRest, paare: t.faellig.length + t.neu.length };
+}
+
+/** Fällige und neue Paare (Vokabel × Richtung) mit den Vokabeln selbst. */
+export async function faelligePaare(profil, { unitIds = null, richtungOverride = null, limitNeu = null } = {}) {
+  const voks = await vokabelnFuerUnits(unitIds || (await profilUnitIds(profil)));
+  const nachId = new Map(voks.map((v) => [v.id, v]));
+  const t = teile(profil, voks.map((v) => v.id), await lernstandMap(profil.id), richtungOverride, limitNeu);
+  const mitV = (p) => ({ v: nachId.get(p.id), richtung: p.richtung, box: p.box });
+  return { ...t, faellig: t.faellig.map(mitV), neu: t.neu.map(mitV), alle: voks };
 }
 
 /** Übersicht je Profil: wie viele Vokabeln in welchem Kasten (Richtung fd zählt). */
 export async function kastenStatistik(profilId, unitIds = null) {
-  const voks = unitIds ? await vokabelnFuerUnits(unitIds) : await db.all('vokabeln');
+  const ids = unitIds ? await vokabelIdsFuerUnits(unitIds) : await db.keys('vokabeln');
   const map = await lernstandMap(profilId);
   const zaehl = [0, 0, 0, 0, 0, 0];
-  for (const v of voks) {
-    const ls = holeLs(map, profilId, v.id, 'fd');
+  for (const id of ids) {
+    const ls = holeLs(map, profilId, id, 'fd');
     zaehl[ls ? ls.box : 0]++;
   }
-  return { zaehl, gesamt: voks.length, sicher: zaehl[4] + zaehl[5] };
+  return { zaehl, gesamt: ids.length, sicher: zaehl[4] + zaehl[5] };
+}
+
+// ---------- Antwortprotokoll aufräumen ----------
+// Jede Antwort wird als „Ereignis“ gespeichert. Damit Sicherung und Eltern-Ansicht nicht immer größer/langsamer werden,
+// werden Einträge älter als 60 Tage je Profil zusammengefasst (Anzahl, richtig, Fehler je Vokabel, letzter Lerntag).
+export const PROTOKOLL_TAGE = 60;
+export async function archiviereEreignisse() {
+  if ((await db.getMeta('archiviertAm')) === heute()) return 0;
+  const grenze = plusTage(heute(), -PROTOKOLL_TAGE);
+  const alt = (await db.all('ereignisse')).filter((e) => isoTag(e.zeitpunkt) < grenze);
+  const proProfil = new Map();
+  alt.forEach((e) => { if (!proProfil.has(e.profilId)) proProfil.set(e.profilId, []); proProfil.get(e.profilId).push(e); });
+  const ops = [];
+  for (const [profilId, liste] of proProfil) {
+    const b = (await db.get('belohnungen', profilId)) || { profilId, punkte: 0, serie: { aktuell: 0, rekord: 0 }, abzeichen: [] };
+    const a = { antworten: 0, richtig: 0, falschJeVokabel: {}, letzte: '', ...(b.archiv || {}) };
+    for (const e of liste) {
+      a.antworten++;
+      if (e.korrekt) a.richtig++;
+      else if (e.vokabelId) a.falschJeVokabel[e.vokabelId] = (a.falschJeVokabel[e.vokabelId] || 0) + 1;
+      if (e.zeitpunkt > a.letzte) a.letzte = e.zeitpunkt;
+      ops.push({ store: 'ereignisse', op: 'del', key: e.id });
+    }
+    b.archiv = a;
+    ops.push({ store: 'belohnungen', op: 'put', value: b });
+  }
+  if (ops.length) await db.batch(ops);
+  await db.setMeta('archiviertAm', heute());
+  return alt.length;
 }

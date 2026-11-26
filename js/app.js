@@ -25,6 +25,9 @@ const ROUTES = [
   ['unit/:id', V.unitView],
   ['vokabel/:id', V.vokabelView],
   ['vokabel-bearbeiten/:id', V.vokabelFormView],
+  ['vokabel-neu/:unitId', V.vokabelFormView],
+  ['unit-bearbeiten/:id', V.unitFormView],
+  ['unit-neu/:lwId', V.unitFormView],
   ['import', importView],
   ['backup', V.backupView],
   ['einstellungen', V.einstellungenView],
@@ -67,6 +70,7 @@ async function render() {
   const [path, qs] = roh.split('?');
   const query = Object.fromEntries(new URLSearchParams(qs || ''));
   const treffer = match(path) || match('');
+  if (!path.startsWith('eltern')) P.elternSperren();   // Eltern-Bereich beim Verlassen wieder sperren
   const id = aktivesProfilId();
   ctx.profil = id ? await db.get('profile', id) : null;
   if (!ctx.profil && id) setzeAktivesProfil(null);
@@ -123,6 +127,7 @@ async function start() {
   window.addEventListener('hashchange', render);
   render();
   import('./sicherung.js').then((m) => m.autoSicherung()).catch(() => {});
+  import('./lernen.js').then((m) => m.archiviereEreignisse()).catch((e) => console.warn('Aufräumen:', e));
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     navigator.serviceWorker.register('sw.js').catch((e) => console.warn('Service Worker:', e));

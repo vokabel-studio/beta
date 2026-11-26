@@ -61,6 +61,11 @@ export async function all(name) { return wrap((await store(name)).getAll()); }
 export async function byIndex(name, index, value) { return wrap((await store(name)).index(index).getAll(value)); }
 export async function put(name, value) { return wrap((await store(name, 'readwrite')).put(value)); }
 export async function del(name, key) { return wrap((await store(name, 'readwrite')).delete(key)); }
+// Zählen und Schlüssel holen, ohne die ganzen Einträge zu laden (schneller bei vielen Vokabeln)
+export async function count(name) { return wrap((await store(name)).count()); }
+export async function countByIndex(name, index, value) { return wrap((await store(name)).index(index).count(value)); }
+export async function keys(name) { return wrap((await store(name)).getAllKeys()); }
+export async function keysByIndex(name, index, value) { return wrap((await store(name)).index(index).getAllKeys(value)); }
 
 // Mehrere Schreibvorgänge in einer Transaktion: ops = [{store, op:'put'|'del', value|key}]
 export async function batch(ops) {
@@ -95,21 +100,56 @@ export async function getMeta(key, fallback = null) {
 }
 export async function setMeta(key, value) { return put('meta', { key, value }); }
 
-// Unit samt Inhalt löschen (Lernstände der Profile zu diesen Vokabeln mit)
-export async function deleteUnit(unitId) {
-  const [parts, voks, saetze, satzbau] = await Promise.all([
-    byIndex('parts', 'unitId', unitId), byIndex('vokabeln', 'unitId', unitId),
-    byIndex('lernsaetze', 'unitId', unitId), byIndex('satzbau', 'unitId', unitId)
+// Löschvorgänge für eine Unit (Inhalt, Einlese-Protokolle, Lernstände der Profile zu diesen Vokabeln)
+async function unitLoeschOps(unitId) {
+  const [parts, vokIds, saetze, satzbau, material, importe] = await Promise.all([
+    keysByIndex('parts', 'unitId', unitId), keysByIndex('vokabeln', 'unitId', unitId),
+    keysByIndex('lernsaetze', 'unitId', unitId), keysByIndex('satzbau', 'unitId', unitId),
+    keysByIndex('material', 'unitId', unitId), all('importe')
   ]);
   const ops = [
-    ...parts.map((x) => ({ store: 'parts', op: 'del', key: x.id })),
-    ...voks.map((x) => ({ store: 'vokabeln', op: 'del', key: x.id })),
-    ...saetze.map((x) => ({ store: 'lernsaetze', op: 'del', key: x.id })),
-    ...satzbau.map((x) => ({ store: 'satzbau', op: 'del', key: x.id })),
+    ...parts.map((key) => ({ store: 'parts', op: 'del', key })),
+    ...vokIds.map((key) => ({ store: 'vokabeln', op: 'del', key })),
+    ...saetze.map((key) => ({ store: 'lernsaetze', op: 'del', key })),
+    ...satzbau.map((key) => ({ store: 'satzbau', op: 'del', key })),
+    ...material.map((key) => ({ store: 'material', op: 'del', key })),
+    ...importe.filter((i) => i.unitId === unitId).map((i) => ({ store: 'importe', op: 'del', key: i.id })),
     { store: 'units', op: 'del', key: unitId }
   ];
-  for (const v of voks) {
-    for (const ls of await byIndex('lernstand', 'vokabelId', v.id)) ops.push({ store: 'lernstand', op: 'del', key: ls.key });
-  }
+  ops.push(...(await lernstandOps(vokIds)));
+  return ops;
+}
+
+async function lernstandOps(vokIds) {
+  const lists = await Promise.all(vokIds.map((id) => keysByIndex('lernstand', 'vokabelId', id)));
+  return lists.flat().map((key) => ({ store: 'lernstand', op: 'del', key }));
+}
+
+export async function deleteUnit(unitId) { return batch(await unitLoeschOps(unitId)); }
+
+/** Buch mit allen Units, Vokabeln und Lernständen löschen */
+export async function deleteLehrwerk(lehrwerkId) {
+  const unitIds = await keysByIndex('units', 'lehrwerkId', lehrwerkId);
+  const ops = (await Promise.all(unitIds.map(unitLoeschOps))).flat();
+  ops.push({ store: 'lehrwerke', op: 'del', key: lehrwerkId });
   return batch(ops);
+}
+
+/** Part mit seinen Vokabeln löschen; Lernsätze/Satzbau des Parts bleiben (ohne Part-Zuordnung) */
+export async function deletePart(partId) {
+  const vokIds = await keysByIndex('vokabeln', 'partId', partId);
+  const ops = [
+    ...vokIds.map((key) => ({ store: 'vokabeln', op: 'del', key })),
+    ...(await lernstandOps(vokIds)),
+    { store: 'parts', op: 'del', key: partId }
+  ];
+  return batch(ops);
+}
+
+/** Lernstand eines Profils für bestimmte Vokabeln löschen (= wieder „neu“) */
+export async function resetLernstand(profilId, vokIds) {
+  const lists = await Promise.all(vokIds.map((id) => byIndex('lernstand', 'vokabelId', id)));
+  const ops = lists.flat().filter((l) => l.profilId === profilId).map((l) => ({ store: 'lernstand', op: 'del', key: l.key }));
+  if (ops.length) await batch(ops);
+  return ops.length;
 }

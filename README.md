@@ -1,7 +1,7 @@
 # Vokabel-Studio
 
 Vokabel-Lern-App für Schülerinnen und Schüler am Gymnasium (NRW), Englisch und Latein.
-Web-App (PWA) für iPhone und iPad, alle Daten bleiben lokal auf dem Gerät. Keine KI-Anbindung, keine API-Schlüssel.
+Web-App (PWA) für iPhone, iPad und Android, alle Daten bleiben lokal auf dem Gerät. KI-Auswertung ist optional (eigener Gratis-Schlüssel, bleibt auf dem Gerät).
 
 **App öffnen:** https://vokabel-studio.github.io/
 
@@ -27,6 +27,7 @@ Wichtig: Safari und die Home-Bildschirm-App haben getrennte Speicher. Am besten 
 | 3 | Wiederholungsplan, Termin der Vokabelarbeit, Abschlusstest, Druck/PDF | ✅ |
 | 4 | Punkte, Serien, Abzeichen, Eltern-Ansicht, Sicherung (Cloud/Ordner), dunkler Modus, Animationen | ✅ |
 | + | Direkte KI-Auswertung von Fotos (Gemini, Groq, Mistral; eigener Gratis-Schlüssel, automatischer Anbieterwechsel), Vokabelpakete zum Teilen ohne Profile | ✅ |
+| + | Alles nachträglich bearbeiten/löschen (Bücher, Units, Parts, Vokabeln, Lernsätze, Satzbau, Termine), Vokabeln/Units von Hand anlegen, Lernstand je Unit zurücksetzen, angefangene Übung fortsetzen, Tagesziel pro Tag | ✅ (Beta) |
 
 **Bekannte Einschränkung iPhone/iPad:** Die Spracheingabe der App liefert unter iOS nur beim ersten Versuch nach dem App-Start Ton (Gerätetests Nov. 2026). Auf iOS wird deshalb das Tastatur-Diktat empfohlen; der App-Mikrofonknopf ist dort ausgeblendet.
 

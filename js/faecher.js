@@ -34,3 +34,5 @@ export const SPRACH_LANG = { fr: 'Französisch', la: 'Latein', en: 'Englisch', e
 
 export const fach = (id) => FAECHER.find((f) => f.id === id);
 export const lehrwerkName = (lw) => `${lw.titel}${lw.band ? ' – Band ' + lw.band : ''}`;
+/** „Unit“ bzw. „Lektion“ (Latein) */
+export const unitWort = (f) => (f?.formenTyp === 'latein' ? 'Lektion' : 'Unit');

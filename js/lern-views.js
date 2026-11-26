@@ -9,6 +9,7 @@ import { nachSitzung, nachTest } from './belohnung.js';
 import { formenHtml } from './views.js';
 import * as fx from './effekte.js';
 import { E as emo } from './styles.js';
+import { LS_PREFIX } from './config.js';
 
 // ---------- gemeinsame Daten ----------
 export async function unitKontext() {
@@ -24,11 +25,13 @@ let H = null;   // Auswahl im Hub
 export async function lernenView({ query }, ctx) {
   if (!ctx.profil) { ctx.go('profile'); return null; }
   const { units, lw, fachVonUnit } = await unitKontext();
-  const voks = await db.all('vokabeln');
-  const satzbau = await db.all('satzbau');
+  // nur zählen, nicht alle Vokabeln laden
   const nVok = new Map(), nSb = new Map();
-  voks.forEach((v) => nVok.set(v.unitId, (nVok.get(v.unitId) || 0) + 1));
-  satzbau.forEach((s) => nSb.set(s.unitId, (nSb.get(s.unitId) || 0) + 1));
+  await Promise.all(units.map(async (u) => {
+    const [a, b] = await Promise.all([db.countByIndex('vokabeln', 'unitId', u.id), db.countByIndex('satzbau', 'unitId', u.id)]);
+    nVok.set(u.id, a); nSb.set(u.id, b);
+  }));
+  const offen = offeneSitzung(ctx.profil.id);
   const erlaubt = units.filter((u) => nVok.get(u.id) && (!ctx.profil.fachIds?.length || ctx.profil.fachIds.includes(fachVonUnit.get(u.id).id)));
   erlaubt.sort((a, b) => lehrwerkName(lw.get(a.lehrwerkId)).localeCompare(lehrwerkName(lw.get(b.lehrwerkId))) || a.nummer.localeCompare(b.nummer, 'de', { numeric: true }));
 
@@ -43,6 +46,7 @@ export async function lernenView({ query }, ctx) {
   const gruppen = new Map();
   erlaubt.forEach((u) => { const k = u.lehrwerkId; if (!gruppen.has(k)) gruppen.set(k, []); gruppen.get(k).push(u); });
   const html = `
+    ${offen ? fortsetzenKarte(offen) : ''}
     <div class="card" style="text-align:center">
       <button class="btn block" id="h-faellig" style="min-height:72px;font-size:20px">🔁 Fällige wiederholen</button>
       <p class="muted small" id="h-info" style="margin-bottom:0"></p>
@@ -86,8 +90,9 @@ export async function lernenView({ query }, ctx) {
         $$('.tile[data-modus]', root).forEach((t) => t.toggleAttribute('disabled', !ids.length));
         $('#h-faellig', root).disabled = !ids.length;
         if (!ids.length) { $('#h-info', root).textContent = 'Wähle mindestens eine Unit.'; return; }
-        const f = await L.faelligePaare(ctx.profil, { unitIds: ids, richtungOverride: H.richtung || null });
-        $('#h-info', root).textContent = `${f.faellig.length} fällig · ${f.neuGesamt} noch nie geübt`;
+        const z = await L.faelligZahlen(ctx.profil, { unitIds: ids, richtungOverride: H.richtung || null });
+        $('#h-info', root).textContent = `${plural(z.faellig, 'Vokabel', 'Vokabeln')} fällig · ${z.neuHeute} neue für heute`
+          + (z.neu > z.neuHeute ? ` (${z.neu} noch nie geübt, Tagesziel ${ctx.profil.einstellungen?.tagesziel || 20})` : '');
       };
       $$('.h-unit', root).forEach((c) => c.onchange = () => { c.checked ? H.auswahl.add(c.value) : H.auswahl.delete(c.value); aktualisiere(); });
       $('#h-richtung', root).value = H.richtung;
@@ -95,6 +100,7 @@ export async function lernenView({ query }, ctx) {
       $('#h-anzahl', root).onchange = (e) => { H.anzahl = +e.target.value; };
       $('#h-faellig', root).onclick = () => starte({ modus: 'faellig' }, ctx);
       $$('.tile[data-modus]', root).forEach((t) => t.onclick = () => starte({ modus: t.dataset.modus }, ctx));
+      bindFortsetzen(root, ctx);
       $('#h-druck', root).onclick = () => ctx.go(`druck?units=${[...H.auswahl].join(',')}&n=${H.anzahl || 0}&richtung=${H.richtung || 'beide'}`);
       aktualisiere();
     }
@@ -115,6 +121,39 @@ const modusKachel = (modus, icon, titel, sub, id = '') =>
 // ================= SITZUNG =================
 let S = null;
 
+// Angefangene Übung merken: Android/iOS beenden die App im Hintergrund gern – dann kann man weitermachen.
+const SITZ_KEY = LS_PREFIX + 'sitzung';
+const SITZ_MAX_ALTER = 48 * 3600 * 1000;
+function merkeSitzung() {
+  try {
+    if (!S || S.ende || S.i >= S.items.length) { localStorage.removeItem(SITZ_KEY); return; }
+    const { autoTimer, ...rest } = S;
+    localStorage.setItem(SITZ_KEY, JSON.stringify({ ...rest, gemerktAm: Date.now() }));
+  } catch { /* Speicher voll oder privat – dann eben ohne */ }
+}
+export function vergissSitzung() { S = null; try { localStorage.removeItem(SITZ_KEY); } catch { /* egal */ } }
+/** Angefangene Übung dieses Profils (aus dem Speicher oder vom Gerät gemerkt) */
+export function offeneSitzung(profilId) {
+  if (S && S.profilId === profilId && !S.ende && S.i < S.items.length) return S;
+  if (S && !S.ende && S.i < S.items.length) return null;   // gehört einem anderen Profil
+  try {
+    const x = JSON.parse(localStorage.getItem(SITZ_KEY) || 'null');
+    if (x && x.profilId === profilId && x.i < x.items.length && Date.now() - x.gemerktAm < SITZ_MAX_ALTER) { S = x; return S; }
+  } catch { /* egal */ }
+  return null;
+}
+export function fortsetzenKarte(o) {
+  return `<div class="card heute">
+    <div class="check-head"><strong class="grow">▶️ Angefangene Übung</strong><span class="badge">${o.i} von ${o.items.length} geschafft</span></div>
+    <p class="small" style="margin:6px 0">${esc(o.titel)} – du kannst genau da weitermachen, wo du aufgehört hast.</p>
+    <div class="btn-row" style="margin-bottom:0"><a class="btn" href="#/uebung">Weitermachen</a><button class="btn secondary" id="sitz-weg">Verwerfen</button></div>
+  </div>`;
+}
+export function bindFortsetzen(root, ctx) {
+  const b = $('#sitz-weg', root);
+  if (b) b.onclick = () => { if (confirm('Angefangene Übung verwerfen? Was du schon beantwortet hast, bleibt gespeichert.')) { vergissSitzung(); ctx.rerender(); } };
+}
+
 /**
  * cfg: { modus, unitIds, anzahl, richtung, zurueck, vokabelIds?, titel?, terminRef? }
  * modus: faellig | karten | abfrage | mc | neu | satzbau | frei | formen | test | schwach
@@ -134,7 +173,11 @@ export async function starteSitzung(cfg, profil) {
     case 'faellig': {
       const f = await L.faelligePaare(profil, { unitIds: cfg.unitIds, richtungOverride: cfg.richtung });
       const paare = begrenze([...f.faellig, ...L.mische(f.neu)], anz || 25);
-      if (!paare.length) return { leer: 'Super – gerade ist nichts fällig! 🎉' };
+      if (!paare.length) {
+        return { leer: f.neuGesamt && !f.tagesRest
+          ? 'Für heute hast du genug neue Vokabeln gelernt! 🎉 Morgen kommen neue. Üben kannst du trotzdem – z. B. mit Lernkarten.'
+          : 'Super – gerade ist nichts fällig! 🎉' };
+      }
       items = paare.map((p, i) => ({ typ: p.box === 0 ? 'karte' : (i % 2 ? 'mc' : 'tippen'), v: p.v, richtung: p.richtung }));
       // neue Wörter: erst Karte, später zusätzlich abfragen
       items = [...items, ...paare.filter((p) => p.box === 0).map((p) => ({ typ: 'mc', v: p.v, richtung: p.richtung }))];
@@ -179,13 +222,16 @@ export async function starteSitzung(cfg, profil) {
   if (!items.length) return { leer: 'Dafür gibt es in dieser Auswahl keine Aufgaben.' };
   items.forEach((it) => { it.id = uid('q'); if (it.v) it.fach = fachVonUnit.get(it.v.unitId); });
   S = { cfg, titel, items, i: 0, pool, profilId: profil.id, punkte: 0, serie: 0, maxSerie: 0, neueAbzeichen: [], antworten: [], fb: null, ende: null };
+  merkeSitzung();
   return { ok: true };
 }
 
 export async function uebungView(_p, ctx) {
   if (!ctx.profil) { ctx.go('profile'); return null; }
+  if (!S || S.profilId !== ctx.profil.id) offeneSitzung(ctx.profil.id);
   if (!S || S.profilId !== ctx.profil.id) { ctx.go('lernen'); return null; }
   if (S.i >= S.items.length) return endeView(ctx);
+  merkeSitzung();
   const it = S.items[S.i];
   const kopf = `
     <div class="sess-head"><span>${S.i + 1} / ${S.items.length}</span><span class="grow"><span class="bar"><span style="width:${Math.round(S.i / S.items.length * 100)}%"></span></span></span>
@@ -230,6 +276,11 @@ function frageKarte(it) {
     <div style="margin-top:8px">${fd ? sprechKnopf(sprechText(it.v), sprachLang(it, 'fremd'), true) : sprechKnopf(it.v.bedeutungen.join(', '), 'de-DE', true)}</div>
     ${fd && it.fach.vorlesen.hinweis ? `<div class="hinweis-latein">🇮🇹 ${esc(it.fach.vorlesen.hinweis)}</div>` : ''}
   </div>`;
+}
+// Zusatzinfos als Karte – nur wenn es welche gibt (sonst keine leere Box)
+function zusatzKarte(v, fach) {
+  const z = zusatzKurz(v, fach).trim();
+  return z ? `<div class="card">${z}</div>` : '';
 }
 function zusatzKurz(v, fach) {
   const b = v.beispiele?.[0];
@@ -356,10 +407,10 @@ async function tippItem(it, ctx) {
 
 function feedbackHtml(fb, loes, it) {
   const kl = fb.ergebnis === 'richtig' ? 'ok' : fb.ergebnis === 'fast' ? 'warn' : 'err';
-  const titel = fb.ergebnis === 'richtig' ? '✓ Richtig!' : fb.ergebnis === 'fast' ? '≈ Fast richtig – achte auf die Schreibweise.' : fb.antwort ? '✗ Leider falsch.' : 'Kein Problem – merk es dir:';
+  const titel = fb.ergebnis === 'richtig' ? '✓ Richtig!' : fb.ergebnis === 'fast' ? (it.richtung === 'df' ? '≈ Fast richtig – achte auf die Schreibweise. Die Vokabel kommt morgen noch mal.' : '≈ Fast richtig – achte auf die Schreibweise.') : fb.antwort ? '✗ Leider falsch.' : 'Kein Problem – merk es dir:';
   return `<div class="msg ${kl}"><strong>${titel}</strong><br>
     ${fb.ergebnis !== 'richtig' || loes.length > 1 ? `Lösung: <strong>${esc(loes.join('; '))}</strong>` : ''}</div>
-    <div class="card">${zusatzKurz(it.v, it.fach)}</div>
+    ${zusatzKarte(it.v, it.fach)}
     <div class="btn-row">
       ${fb.ergebnis === 'falsch' && fb.antwort ? '<button class="btn secondary" id="t-recht">Ich hatte recht</button>' : ''}
       <button class="btn" id="t-weiter">Weiter ›</button></div>`;
@@ -382,7 +433,7 @@ async function mcItem(it, ctx) {
       if (fb) kl = o === it.richtigText ? 'ok' : o === fb.antwort ? 'danger' : 'secondary';
       return `<button class="btn ${kl} block" data-o="${i}" ${fb ? 'disabled style="opacity:1"' : ''}>${esc(o)}</button>`;
     }).join('')}</div>
-    ${fb ? `${fb.ergebnis === 'falsch' ? `<div class="card">${zusatzKurz(it.v, it.fach)}</div>` : ''}<button class="btn block" id="m-weiter">Weiter ›</button>` : ''}`;
+    ${fb ? `${fb.ergebnis === 'falsch' ? zusatzKarte(it.v, it.fach) : ''}<button class="btn block" id="m-weiter">Weiter ›</button>` : ''}`;
   return {
     html,
     bind(root) {
@@ -567,6 +618,7 @@ async function endeView(ctx) {
     if (S.cfg.terminRef) await markiereTerminAufgabe(S.cfg.terminRef);
     import('./sicherung.js').then((m) => m.autoSicherung()).then((r) => { if (r?.ok) toast('💾 Automatisch gesichert'); }).catch(() => {});
     S.ende = { richtig, gesamt: gewertet.length, prozent, schwach };
+    merkeSitzung();   // Übung fertig → nicht mehr zum Fortsetzen anbieten
     // Erfolgs-Animationen (nur wenn eingeschaltet)
     if (S.cfg.modus === 'test' ? prozent >= 75 : prozent >= 80 && gewertet.length >= 5) setTimeout(() => fx.konfetti(prozent >= 100 ? 3 : prozent >= 90 ? 2 : 1), 300);
     res.neueAbzeichen.forEach((a, i) => setTimeout(() => fx.abzeichen(a), 900 + i * 3400));

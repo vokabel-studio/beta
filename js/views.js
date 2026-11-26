@@ -1,6 +1,6 @@
 // Ansichten (außer Import): Profile, Start, Bibliothek, Unit, Vokabel, Backup, Einstellungen
 import * as db from './db.js';
-import { FAECHER, WORTARTEN, WORTART_NAMEN, SPRACH_NAMEN, SPRACH_LANG, fach as getFach, lehrwerkName } from './faecher.js';
+import { FAECHER, WORTARTEN, WORTART_NAMEN, SPRACH_NAMEN, SPRACH_LANG, fach as getFach, lehrwerkName, unitWort as uWort } from './faecher.js';
 import { esc, uid, toast, $, $$, datum, plural, isStandalone, isIOS } from './util.js';
 import { sprich, ttsVerfuegbar } from './speech.js';
 import * as backup from './backup.js';
@@ -194,16 +194,20 @@ export async function profilFormView({ id }, ctx) {
 
 export async function homeView(_p, ctx) {
   if (brauchtProfil(ctx)) return null;
-  const [units, voks] = await Promise.all([db.all('units'), db.all('vokabeln')]);
+  // nur zählen statt alle Vokabeln laden
+  const [units, nVok] = await Promise.all([db.all('units'), db.count('vokabeln')]);
   const lehrwerke = new Map((await db.all('lehrwerke')).map((l) => [l.id, l]));
-  const zuletzt = units.sort((a, b) => (b.geaendertAm || '').localeCompare(a.geaendertAm || '')).slice(0, 3);
-  const [{ faelligePaare, tageBis, heute: heuteIso }, { naechsterTermin }, { hole }] = await Promise.all([import('./lernen.js'), import('./plan-views.js'), import('./belohnung.js')]);
+  const [L, { naechsterTermin }, { hole }, LV] = await Promise.all([import('./lernen.js'), import('./plan-views.js'), import('./belohnung.js'), import('./lern-views.js')]);
+  const { tageBis, heute: heuteIso } = L;
+  const meine = new Set(await L.profilUnitIds(ctx.profil));
+  const zuletzt = units.filter((u) => meine.has(u.id)).sort((a, b) => (b.geaendertAm || '').localeCompare(a.geaendertAm || '')).slice(0, 3);
   const { erinnerungFaellig } = await import('./sicherung.js');
   const erinnerung = await erinnerungFaellig();
-  const [fp, termin, bel] = await Promise.all([voks.length ? faelligePaare(ctx.profil) : { faellig: [] }, naechsterTermin(ctx.profil.id), hole(ctx.profil.id)]);
+  const [fz, termin, bel] = await Promise.all([nVok ? L.faelligZahlen(ctx.profil) : { faellig: 0, neu: 0, neuHeute: 0 }, naechsterTermin(ctx.profil.id), hole(ctx.profil.id)]);
+  const offen = LV.offeneSitzung(ctx.profil.id);
   const tb = termin ? tageBis(termin.datum) : 0;
   const heuteInfo = {
-    faellig: fp.faellig.length, neu: fp.neuGesamt || 0, punkte: bel.punkte, serie: bel.serie.letzterLerntag ? bel.serie.aktuell : 0, termin,
+    faellig: fz.faellig, neu: fz.neu, neuHeute: fz.neuHeute, punkte: bel.punkte, serie: bel.serie.letzterLerntag ? bel.serie.aktuell : 0, termin,
     terminText: termin ? (tb === 0 ? 'ist heute!' : tb === 1 ? 'ist morgen' : `in ${tb} Tagen`) : '',
     terminOffen: termin?.plan?.find((d) => d.datum === heuteIso())?.aufgaben.some((a) => !a.erledigt)
   };
@@ -213,13 +217,15 @@ export async function homeView(_p, ctx) {
   const html = `
     ${umzugKarte()}
     <h2 style="margin-top:4px">Hallo ${esc(ctx.profil.name)}! ${avatarHtml(ctx.profil.avatar, 22)}</h2>
-    <p class="muted">${plural(units.length, 'Unit', 'Units')} · ${plural(voks.length, 'Vokabel', 'Vokabeln')} auf diesem Gerät</p>
+    <p class="muted">${plural(units.length, 'Unit', 'Units')} · ${plural(nVok, 'Vokabel', 'Vokabeln')} auf diesem Gerät</p>
     ${erinnerung ? `<a class="msg warn" href="#/backup" style="display:block;text-decoration:none">💾 ${erinnerung.seit === null ? 'Du hast noch nie gesichert.' : `Letzte Sicherung vor ${erinnerung.seit} Tagen.`} <strong>Jetzt sichern ›</strong></a>` : ''}
-    ${voks.length ? `<div class="card heute">
+    ${offen ? LV.fortsetzenKarte(offen) : ''}
+    ${nVok ? `<div class="card heute">
       <div class="check-head"><strong class="grow">Heute</strong>${heuteInfo.serie ? `<span class="badge warn">🔥 ${heuteInfo.serie}</span>` : ''}</div>
-      <p style="margin:6px 0">${heuteInfo.faellig ? `<strong>${heuteInfo.faellig}</strong> Vokabeln sind fällig.` : heuteInfo.neu ? `Nichts fällig. <strong>${heuteInfo.neu}</strong> Vokabeln hast du noch nie geübt.` : 'Nichts fällig – super! 🎉'}</p>
+      <p style="margin:6px 0">${heuteInfo.faellig ? `<strong>${heuteInfo.faellig}</strong> ${heuteInfo.faellig === 1 ? 'Vokabel ist' : 'Vokabeln sind'} fällig.` : 'Nichts fällig – super! 🎉'}
+        ${heuteInfo.neuHeute ? `<br><strong>${heuteInfo.neuHeute}</strong> neue ${heuteInfo.neuHeute === 1 ? 'Vokabel wartet' : 'Vokabeln warten'} auf dich.` : heuteInfo.neu ? '<br>Für heute genug neue Vokabeln gelernt ✓' : ''}</p>
       ${heuteInfo.termin ? `<p class="small" style="margin:6px 0">📝 <a href="#/termin/${esc(heuteInfo.termin.id)}">${esc(heuteInfo.termin.titel)}</a> ${heuteInfo.terminText}</p>` : ''}
-      <a class="btn block" href="${heuteInfo.termin && heuteInfo.terminOffen ? '#/termin/' + esc(heuteInfo.termin.id) : heuteInfo.faellig ? '#/plan' : '#/lernen'}">${heuteInfo.termin && heuteInfo.terminOffen ? '📅 Heutige Aufgaben' : (heuteInfo.faellig ? '🔁 Wiederholen' : E('lernen') + ' Lernen')}</a>
+      <a class="btn block" href="${heuteInfo.termin && heuteInfo.terminOffen ? '#/termin/' + esc(heuteInfo.termin.id) : heuteInfo.faellig || heuteInfo.neuHeute ? '#/plan' : '#/lernen'}">${heuteInfo.termin && heuteInfo.terminOffen ? '📅 Heutige Aufgaben' : (heuteInfo.faellig || heuteInfo.neuHeute ? '🔁 Jetzt lernen' : E('lernen') + ' Lernen')}</a>
     </div>` : ''}
     <div class="grid">
       ${tile('#/lernen', E('lernen'), 'Lernen', 'Karten, Abfrage, Satzbau, Test')}
@@ -233,20 +239,20 @@ export async function homeView(_p, ctx) {
     </div>
     ${zuletzt.length ? `<h3>Zuletzt bearbeitet</h3><div class="card" style="padding:0"><ul class="list">
       ${zuletzt.map((u) => `<li><a class="list-item" href="#/unit/${esc(u.id)}"><span class="grow">
-        <span class="vok-wort">Unit ${esc(u.nummer)}${u.titel ? ' – ' + esc(u.titel) : ''}</span><br>
+        <span class="vok-wort">${uWort(getFach(lehrwerke.get(u.lehrwerkId)?.fachId))} ${esc(u.nummer)}${u.titel ? ' – ' + esc(u.titel) : ''}</span><br>
         <span class="vok-de">${esc(lehrwerke.get(u.lehrwerkId) ? lehrwerkName(lehrwerke.get(u.lehrwerkId)) : '')}</span></span><span class="chev">›</span></a></li>`).join('')}
     </ul></div>` : ''}
     ${isIOS() && !isStandalone() ? `<div class="msg info small">📱 Tipp: In Safari auf <strong>Teilen ⬆︎ › Zum Home-Bildschirm</strong> tippen. Dann startet Vokabel-Studio wie eine App.<br>
       Achtung: Safari und die Home-Bildschirm-App speichern getrennt. Lege die App am besten <strong>vor</strong> dem ersten Einlesen auf den Home-Bildschirm.</div>` : ''}`;
-  return { title: 'Vokabel-Studio', logo: true, html, bind: bindUmzug };
+  return { title: 'Vokabel-Studio', logo: true, html, bind(root) { bindUmzug(root); LV.bindFortsetzen(root, ctx); } };
 }
 
 // ---------- Bibliothek ----------
 
 async function zaehleUnits() {
-  const [units, voks] = await Promise.all([db.all('units'), db.all('vokabeln')]);
-  const vokProUnit = new Map();
-  voks.forEach((v) => vokProUnit.set(v.unitId, (vokProUnit.get(v.unitId) || 0) + 1));
+  const units = await db.all('units');
+  const zahlen = await Promise.all(units.map((u) => db.countByIndex('vokabeln', 'unitId', u.id)));
+  const vokProUnit = new Map(units.map((u, i) => [u.id, zahlen[i]]));
   return { units, vokProUnit };
 }
 
@@ -272,7 +278,7 @@ export async function bibliothekView(_p, ctx) {
             <span class="vok-de">${l.klasse ? 'Klasse ' + esc(l.klasse) + ' · ' : ''}${plural(us.length, 'Unit', 'Units')} · ${plural(nv, 'Vokabel', 'Vokabeln')}</span>
             </span><span class="chev">›</span></a></li>`;
         }).join('')}
-        <li><a class="list-item" href="#/lehrwerk-neu/${f.id}"><span class="grow muted">➕ Anderes Buch hinzufügen</span></a></li>
+        <li><a class="list-item" href="#/lehrwerk-neu/${f.id}"><span class="grow muted">➕ Buch hinzufügen</span></a></li>
         </ul></div>`;
     }).join('')}
     ${units.length ? '<div class="btn-row" style="margin-top:20px"><a class="btn secondary" href="#/teilen">📦 Vokabeln teilen</a><a class="btn secondary" href="#/paket-laden">📥 Paket laden</a></div>' : ''}`;
@@ -316,19 +322,27 @@ export async function lehrwerkView({ id }, ctx) {
   const f = getFach(lw.fachId);
   const html = `
     <p class="muted">${f.icon} ${esc(f.name)}${lw.verlag ? ' · ' + esc(lw.verlag) : ''}${lw.ausgabe ? ' · ' + esc(lw.ausgabe) : ''}${lw.klasse ? ' · Klasse ' + esc(lw.klasse) : ''}</p>
-    <div class="btn-row"><a class="btn" href="#/import?lw=${esc(id)}">📸 Neue Seite einlesen</a></div>
+    <div class="btn-row"><a class="btn" href="#/import?lw=${esc(id)}">📸 Neue Seite einlesen</a><a class="btn secondary" href="#/unit-neu/${esc(id)}">✏️ ${uWort(f)} von Hand anlegen</a></div>
     ${units.length ? `<div class="card" style="padding:0"><ul class="list">
       ${units.map((u) => `<li><a class="list-item" href="#/unit/${esc(u.id)}"><span class="grow">
-        <span class="vok-wort">${f.formenTyp === 'latein' ? 'Lektion' : 'Unit'} ${esc(u.nummer)}${u.titel ? ' – ' + esc(u.titel) : ''}</span><br>
+        <span class="vok-wort">${uWort(f)} ${esc(u.nummer)}${u.titel ? ' – ' + esc(u.titel) : ''}</span><br>
         <span class="vok-de">${plural(vokProUnit.get(u.id) || 0, 'Vokabel', 'Vokabeln')}</span></span><span class="chev">›</span></a></li>`).join('')}
     </ul></div>` : '<div class="card empty"><p>In diesem Buch sind noch keine Units eingelesen.</p></div>'}
-    ${!lw.vorinstalliert ? `<div class="btn-row"><a class="btn secondary" href="#/lehrwerk-neu/${esc(lw.fachId)}?id=${esc(id)}">Angaben ändern</a>
-      ${!units.length ? '<button class="btn danger" id="lw-del">Buch entfernen</button>' : ''}</div>` : ''}`;
+    <div class="btn-row" style="margin-top:28px"><a class="btn secondary" href="#/lehrwerk-neu/${esc(lw.fachId)}?id=${esc(id)}">✏️ Buch bearbeiten</a>
+      <button class="btn danger" id="lw-del">🗑️ Buch löschen</button></div>`;
+  const nVok = units.reduce((s, u) => s + (vokProUnit.get(u.id) || 0), 0);
   return {
     title: lehrwerkName(lw), back: 'bibliothek', html,
     bind(root) {
-      const d = $('#lw-del', root);
-      if (d) d.onclick = async () => { if (confirm('Dieses Buch entfernen?')) { await db.del('lehrwerke', id); ctx.go('bibliothek'); } };
+      $('#lw-del', root).onclick = async () => {
+        if (units.length) {
+          if (!confirm(`„${lehrwerkName(lw)}“ mit ${plural(units.length, uWort(f), uWort(f) + (f.formenTyp === 'latein' ? 'en' : 's'))} und ${plural(nVok, 'Vokabel', 'Vokabeln')} löschen?\n\nDer Lernstand aller Profile zu diesen Vokabeln wird ebenfalls gelöscht.`)) return;
+          if (!confirm('Wirklich löschen? Das kann man nicht rückgängig machen (außer mit einer Sicherung).')) return;
+        } else if (!confirm(`„${lehrwerkName(lw)}“ aus der Liste löschen?`)) return;
+        await db.deleteLehrwerk(id);
+        toast('Buch gelöscht.');
+        ctx.go('bibliothek');
+      };
     }
   };
 }
@@ -340,7 +354,8 @@ export async function lehrwerkFormView({ fachId, query }, ctx) {
   if (!f) { ctx.go('bibliothek'); return null; }
   const d = alt || { titel: '', verlag: '', band: '', klasse: '', ausgabe: '' };
   const html = `
-    <p class="muted">${f.icon} ${esc(f.name)}</p>
+    ${alt ? `<label for="lw-fach">Fach</label><select id="lw-fach">${FAECHER.map((x) => `<option value="${x.id}" ${x.id === alt.fachId ? 'selected' : ''}>${x.icon} ${esc(x.name)}</option>`).join('')}</select>`
+      : `<p class="muted">${f.icon} ${esc(f.name)}</p>`}
     <label for="lw-titel">Titel des Buchs</label><input id="lw-titel" type="text" value="${esc(d.titel)}" placeholder="z. B. Green Line">
     <div class="field-row">
       <div><label for="lw-band">Band</label><input id="lw-band" type="text" value="${esc(d.band)}" placeholder="z. B. 2"></div>
@@ -356,11 +371,15 @@ export async function lehrwerkFormView({ fachId, query }, ctx) {
         const titel = $('#lw-titel', root).value.trim();
         if (!titel) { toast('Bitte einen Titel eingeben.'); return; }
         const rec = {
-          ...(alt || { id: uid('lw'), fachId }), titel,
+          ...(alt || { id: uid('lw'), fachId }), titel, ...(alt ? { fachId: $('#lw-fach', root).value } : {}),
           band: $('#lw-band', root).value.trim(), klasse: +$('#lw-klasse', root).value || null,
           verlag: $('#lw-verlag', root).value.trim(), ausgabe: $('#lw-ausgabe', root).value.trim()
         };
         await db.put('lehrwerke', rec);
+        // neues Fach ins Profil übernehmen, damit das Buch sichtbar bleibt
+        if (ctx.profil.fachIds?.length && !ctx.profil.fachIds.includes(rec.fachId)) {
+          const p = await db.get('profile', ctx.profil.id); p.fachIds = [...p.fachIds, rec.fachId]; await db.put('profile', p);
+        }
         ctx.go(`lehrwerk/${rec.id}`);
       };
     }
@@ -389,7 +408,7 @@ export async function unitView({ id }, ctx) {
   const { unit, lw, fach, parts, voks, saetze, satzbau } = d;
   const lang = fach.vorlesen.stimmeSprache;
   const zuPruefen = voks.filter((v) => v.pruefen).length;
-  const unitWort = fach.formenTyp === 'latein' ? 'Lektion' : 'Unit';
+  const unitWort = uWort(fach);
   const html = `
     <div class="card">
       <div class="muted small">${esc(lehrwerkName(lw))}</div>
@@ -406,6 +425,7 @@ export async function unitView({ id }, ctx) {
       <a class="btn secondary" href="#/termin-neu?unit=${esc(unit.id)}">📅 Test-Termin eintragen</a>
       <a class="btn secondary" href="#/import?lw=${esc(lw.id)}&unit=${esc(unit.id)}">📸 Weitere Seite einlesen</a>
     </div>
+    ${!voks.length ? `<div class="card empty"><p>Noch keine Vokabeln in dieser ${unitWort}.</p></div>` : ''}
     ${parts.map((p) => {
       const pv = voks.filter((v) => v.partId === p.id);
       if (!pv.length) return '';
@@ -420,6 +440,7 @@ export async function unitView({ id }, ctx) {
           <span class="chev">›</span></a></li>`).join('')}
         </ul></div>`;
     }).join('')}
+    <div class="btn-row"><a class="btn soft" href="#/vokabel-neu/${esc(unit.id)}">➕ Vokabel von Hand hinzufügen</a></div>
     ${saetze.length ? `<details class="card"><summary>Lernsätze (${saetze.length})</summary><ul class="list">
       ${saetze.map((s) => `<li class="list-item"><span class="grow"><span class="vok-wort">${esc(s.fremd)}</span><br><span class="vok-de">${esc(s.deutsch)}</span></span>${speakBtn(s.fremd, lang, true)}</li>`).join('')}
     </ul></details>` : ''}
@@ -427,50 +448,134 @@ export async function unitView({ id }, ctx) {
       ${satzbau.map((s) => `<li class="list-item"><span class="grow">${esc(s.deutsch)}<br><span class="vok-de">→ ${esc(s.loesung)}</span></span></li>`).join('')}
     </ul></details>` : ''}
     <div class="btn-row" style="margin-top:28px">
-      <button class="btn secondary" id="u-titel">Titel ändern</button>
-      <button class="btn secondary" id="u-verschieben">In anderes Buch verschieben</button>
-      <button class="btn danger" id="u-del">${unitWort} löschen</button>
-    </div>`;
+      <a class="btn secondary" href="#/unit-bearbeiten/${esc(unit.id)}">✏️ ${unitWort} bearbeiten</a>
+      <button class="btn danger" id="u-del">🗑️ ${unitWort} löschen</button>
+    </div>
+    <p class="muted small">Unter „Bearbeiten“: Nummer, Titel, Buch, Parts, Lernsätze und Satzbau-Aufgaben ändern oder löschen, Lernstand zurücksetzen.</p>`;
   return {
     title: `${unitWort} ${unit.nummer}`, back: `lehrwerk/${lw.id}`, html,
     bind(root) {
       bindSprechen(root, ctx);
-      $('#u-verschieben', root).onclick = async () => {
-        const alle = (await db.all('lehrwerke')).filter((l) => l.id !== lw.id).sort((a, b) => (a.fachId + lehrwerkName(a)).localeCompare(b.fachId + lehrwerkName(b)));
-        const box = document.createElement('div');
-        box.className = 'card';
-        box.innerHTML = `<h3 style="margin-top:0">In anderes Buch verschieben</h3>
-          <p class="small muted">Zum Beispiel, wenn eine Latein-Lektion versehentlich unter Englisch eingelesen wurde. Vokabeln und Lernstand bleiben erhalten.</p>
-          <select id="u-ziel">${alle.map((l) => `<option value="${esc(l.id)}">${esc(getFach(l.fachId)?.icon || '')} ${esc(getFach(l.fachId)?.name || '')} – ${esc(lehrwerkName(l))}</option>`).join('')}</select>
-          <div class="btn-row"><button class="btn" id="u-ziel-ok">Verschieben</button><button class="btn secondary" id="u-ziel-ab">Abbrechen</button></div>`;
-        $('#u-verschieben', root).closest('.btn-row').after(box);
-        box.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        $('#u-ziel-ab', box).onclick = () => box.remove();
-        $('#u-ziel-ok', box).onclick = async () => {
-          const ziel = await db.get('lehrwerke', $('#u-ziel', box).value);
-          const doppelt = (await db.byIndex('units', 'lehrwerkId', ziel.id)).find((x) => x.nummer.trim().toLowerCase() === unit.nummer.trim().toLowerCase());
-          if (doppelt && !confirm(`In „${lehrwerkName(ziel)}“ gibt es schon ${unitWort} ${unit.nummer}. Trotzdem verschieben? Dann gibt es sie dort zweimal.`)) return;
-          await db.put('units', { ...unit, lehrwerkId: ziel.id, geaendertAm: new Date().toISOString() });
-          // Fach ins Profil übernehmen, damit die Unit sichtbar bleibt
-          if (ctx.profil.fachIds?.length && !ctx.profil.fachIds.includes(ziel.fachId)) {
-            const p = await db.get('profile', ctx.profil.id); p.fachIds = [...p.fachIds, ziel.fachId]; await db.put('profile', p);
-          }
-          const zf = getFach(ziel.fachId);
-          toast(`Verschoben nach ${lehrwerkName(ziel)} ✓${zf?.formenTyp === 'latein' && fach.formenTyp !== 'latein' ? ' – Tipp: Für Genitiv/Stammformen die Seite neu einlesen und „aktualisieren“.' : ''}`, 5000);
-          ctx.rerender();
-        };
-      };
-      $('#u-titel', root).onclick = async () => {
-        const t = prompt('Neuer Titel:', unit.titel || '');
-        if (t === null) return;
-        await db.put('units', { ...unit, titel: t.trim(), geaendertAm: new Date().toISOString() });
-        ctx.rerender();
-      };
       $('#u-del', root).onclick = async () => {
         if (!confirm(`${unitWort} ${unit.nummer} mit ${voks.length} Vokabeln und allen Lernständen löschen? Das kann man nicht rückgängig machen.`)) return;
         await db.deleteUnit(unit.id);
         toast('Gelöscht.');
         ctx.go(`lehrwerk/${lw.id}`);
+      };
+    }
+  };
+}
+
+// ---------- Unit bearbeiten / von Hand anlegen ----------
+
+export async function unitFormView({ id, lwId }, ctx) {
+  if (brauchtProfil(ctx)) return null;
+  const d = id ? await unitDaten(id) : null;
+  if (id && !d) { ctx.go('bibliothek'); return null; }
+  const lwStart = d ? d.lw : await db.get('lehrwerke', lwId);
+  if (!lwStart) { ctx.go('bibliothek'); return null; }
+  const unit = d?.unit || { id: uid('u'), lehrwerkId: lwStart.id, nummer: '', titel: '', importIds: [], erstelltAm: new Date().toISOString() };
+  const parts = d?.parts || [], saetze = d?.saetze || [], satzbau = d?.satzbau || [], voks = d?.voks || [];
+  const fach = getFach(lwStart.fachId);
+  const W = uWort(fach);
+  const alleLw = (await db.all('lehrwerke')).sort((a, b) => (a.fachId + lehrwerkName(a)).localeCompare(b.fachId + lehrwerkName(b)));
+  const nProPart = new Map(parts.map((p) => [p.id, voks.filter((v) => v.partId === p.id).length]));
+  const wegKnopf = (art, key) => `<button type="button" class="btn danger klein-weg" data-weg="${art}" data-key="${esc(key)}" aria-label="Löschen">🗑️</button>`;
+  const html = `
+    <div class="card">
+      <label for="uf-lw">Buch</label>
+      <select id="uf-lw">${alleLw.map((l) => `<option value="${esc(l.id)}" ${l.id === unit.lehrwerkId ? 'selected' : ''}>${esc(getFach(l.fachId)?.icon || '')} ${esc(lehrwerkName(l))}</option>`).join('')}</select>
+      <div class="field-row">
+        <div><label for="uf-nr">Nummer</label><input id="uf-nr" type="text" value="${esc(unit.nummer)}" placeholder="z. B. 2"></div>
+        <div><label for="uf-titel">Titel (freiwillig)</label><input id="uf-titel" type="text" value="${esc(unit.titel || '')}"></div>
+      </div>
+    </div>
+    ${d ? `
+    <h3>Parts</h3>
+    <div class="card bearb-liste">
+      ${parts.length ? parts.map((p) => `<div class="bearb-zeile" data-zeile="part" data-key="${esc(p.id)}">
+        <input type="text" class="pt-kennung" value="${esc(p.kennung)}" aria-label="Part" style="max-width:80px">
+        <input type="text" class="pt-titel" value="${esc(p.titel || '')}" placeholder="Titel (freiwillig)">
+        <span class="badge" title="Vokabeln">${nProPart.get(p.id)}</span>${wegKnopf('part', p.id)}</div>`).join('') : '<p class="muted small">Noch keine Parts.</p>'}
+      <p class="muted small">Wird ein Part gelöscht, werden auch seine Vokabeln gelöscht. Einzelne Vokabeln verschiebst du über „Bearbeiten“ bei der Vokabel in einen anderen Part.</p>
+    </div>
+    <h3>Lernsätze (${saetze.length})</h3>
+    <div class="card bearb-liste">
+      ${saetze.length ? saetze.map((x) => `<div class="bearb-zeile spalten" data-zeile="satz" data-key="${esc(x.id)}">
+        <div class="grow"><textarea class="ls-fremd" rows="2" lang="${fach.kurz}" aria-label="Satz in der Fremdsprache">${esc(x.fremd)}</textarea>
+        <textarea class="ls-deutsch" rows="2" aria-label="Deutsch">${esc(x.deutsch)}</textarea></div>${wegKnopf('satz', x.id)}</div>`).join('') : '<p class="muted small">Keine Lernsätze.</p>'}
+    </div>
+    <h3>Satzbau-Aufgaben (${satzbau.length})</h3>
+    <div class="card bearb-liste">
+      ${satzbau.length ? satzbau.map((x) => `<div class="bearb-zeile spalten" data-zeile="satzbau" data-key="${esc(x.id)}">
+        <div class="grow"><label class="small muted">Deutsch</label><textarea class="sb-deutsch" rows="2">${esc(x.deutsch)}</textarea>
+        <label class="small muted">Lösung</label><textarea class="sb-loesung" rows="2" lang="${fach.kurz}">${esc(x.loesung)}</textarea>
+        <label class="small muted">Auch richtig (mit / trennen)</label><textarea class="sb-alt" rows="2">${esc((x.alternativen || []).join(' / '))}</textarea>
+        <label class="small muted">Falsche Zusatz-Bausteine (mit Komma)</label><input type="text" class="sb-abl" value="${esc((x.ablenker || []).join(', '))}"></div>
+        ${wegKnopf('satzbau', x.id)}</div>`).join('') : '<p class="muted small">Keine Satzbau-Aufgaben.</p>'}
+    </div>` : `<p class="muted small">Danach kannst du Vokabeln von Hand hinzufügen oder Seiten einlesen.</p>`}
+    <div class="btn-row"><button class="btn" id="uf-save">${d ? 'Alles speichern' : `${W} anlegen`}</button></div>
+    ${d && voks.length ? `<div class="card">
+      <h3 style="margin-top:0">🔄 Lernstand zurücksetzen</h3>
+      <p class="small">Alle ${plural(voks.length, 'Vokabel', 'Vokabeln')} dieser ${W} gelten für <strong>${esc(ctx.profil.name)}</strong> wieder als „neu“. Andere Profile sind nicht betroffen.</p>
+      <button class="btn secondary block" id="uf-reset">Lernstand von ${esc(ctx.profil.name)} zurücksetzen</button></div>` : ''}`;
+  return {
+    title: d ? `${W} ${unit.nummer} bearbeiten` : `Neue ${W}`, back: d ? `unit/${unit.id}` : `lehrwerk/${lwStart.id}`, html,
+    bind(root) {
+      // Löschen erst beim Speichern ausführen; bis dahin rückgängig machbar
+      $$('[data-weg]', root).forEach((b) => b.onclick = () => {
+        const z = b.closest('.bearb-zeile');
+        const weg = z.classList.toggle('weg');
+        b.textContent = weg ? '↩︎' : '🗑️';
+        b.setAttribute('aria-label', weg ? 'Doch behalten' : 'Löschen');
+        $$('input, textarea', z).forEach((i) => { i.disabled = weg; });
+      });
+      const r = $('#uf-reset', root);
+      if (r) r.onclick = async () => {
+        if (!confirm(`Lernstand von ${ctx.profil.name} für diese ${W} zurücksetzen?`)) return;
+        const n = await db.resetLernstand(ctx.profil.id, voks.map((v) => v.id));
+        toast(n ? 'Zurückgesetzt ✓' : 'Hier gab es noch keinen Lernstand.');
+      };
+      $('#uf-save', root).onclick = async () => {
+        const nummer = $('#uf-nr', root).value.trim();
+        if (!nummer) { toast('Bitte eine Nummer eingeben.'); $('#uf-nr', root).focus(); return; }
+        const ziel = await db.get('lehrwerke', $('#uf-lw', root).value);
+        const doppelt = (await db.byIndex('units', 'lehrwerkId', ziel.id)).find((x) => x.id !== unit.id && x.nummer.trim().toLowerCase() === nummer.toLowerCase());
+        if (doppelt && !confirm(`In „${lehrwerkName(ziel)}“ gibt es schon ${W} ${nummer}. Trotzdem speichern? Dann gibt es sie zweimal.`)) return;
+        const weg = (art) => $$(`.bearb-zeile.weg[data-zeile="${art}"]`, root).map((z) => z.dataset.key);
+        const bleibt = (art) => $$(`.bearb-zeile:not(.weg)[data-zeile="${art}"]`, root);
+        const wegParts = weg('part');
+        const wegVok = voks.filter((v) => wegParts.includes(v.partId)).length;
+        if (wegParts.length && !confirm(`${plural(wegParts.length, 'Part', 'Parts')} mit ${plural(wegVok, 'Vokabel', 'Vokabeln')} löschen?`)) return;
+        const ops = [{ store: 'units', op: 'put', value: { ...unit, lehrwerkId: ziel.id, nummer, titel: $('#uf-titel', root).value.trim(), geaendertAm: new Date().toISOString() } }];
+        for (const z of bleibt('part')) {
+          const p = parts.find((x) => x.id === z.dataset.key);
+          const kennung = $('.pt-kennung', z).value.trim() || p.kennung;
+          ops.push({ store: 'parts', op: 'put', value: { ...p, kennung, titel: $('.pt-titel', z).value.trim() } });
+        }
+        for (const z of bleibt('satz')) {
+          const x = saetze.find((y) => y.id === z.dataset.key);
+          const fremd = $('.ls-fremd', z).value.trim(), deutsch = $('.ls-deutsch', z).value.trim();
+          ops.push(fremd && deutsch ? { store: 'lernsaetze', op: 'put', value: { ...x, fremd, deutsch } } : { store: 'lernsaetze', op: 'del', key: x.id });
+        }
+        for (const z of bleibt('satzbau')) {
+          const x = satzbau.find((y) => y.id === z.dataset.key);
+          const deutsch = $('.sb-deutsch', z).value.trim(), loesung = $('.sb-loesung', z).value.trim();
+          const alternativen = $('.sb-alt', z).value.split('/').map((t) => t.trim()).filter(Boolean);
+          const ablenker = $('.sb-abl', z).value.split(',').map((t) => t.trim()).filter(Boolean);
+          ops.push(deutsch && loesung ? { store: 'satzbau', op: 'put', value: { ...x, deutsch, loesung, alternativen, ablenker } } : { store: 'satzbau', op: 'del', key: x.id });
+        }
+        weg('satz').forEach((key) => ops.push({ store: 'lernsaetze', op: 'del', key }));
+        weg('satzbau').forEach((key) => ops.push({ store: 'satzbau', op: 'del', key }));
+        await db.batch(ops);
+        for (const pid of wegParts) await db.deletePart(pid);
+        // Fach ins Profil übernehmen, damit die Unit sichtbar bleibt
+        if (ctx.profil.fachIds?.length && !ctx.profil.fachIds.includes(ziel.fachId)) {
+          const p = await db.get('profile', ctx.profil.id); p.fachIds = [...p.fachIds, ziel.fachId]; await db.put('profile', p);
+        }
+        const zf = getFach(ziel.fachId);
+        toast(d ? `Gespeichert ✓${zf?.formenTyp === 'latein' && fach.formenTyp !== 'latein' ? ' – Tipp: Für Genitiv/Stammformen die Seite neu einlesen.' : ''}` : `${W} angelegt ✓`, 4000);
+        ctx.go(`unit/${unit.id}`);
       };
     }
   };
@@ -557,11 +662,20 @@ export async function vokabelView({ id }, ctx) {
   };
 }
 
-export async function vokabelFormView({ id }, ctx) {
+export async function vokabelFormView({ id, unitId }, ctx) {
   if (brauchtProfil(ctx)) return null;
-  const v = await db.get('vokabeln', id);
+  const neu = !id;
+  const v = neu
+    ? { id: uid('v'), unitId, partId: '', wort: '', lautschrift: '', wortart: 'sonstiges', bedeutungen: [], formen: {}, beispiele: [], andereSprachen: [], gegenteile: [], synonyme: [], wortfamilie: [], stolpersteine: [], merkhilfe: '', erklaerung: '' }
+    : await db.get('vokabeln', id);
   if (!v) { ctx.go('bibliothek'); return null; }
   const d = await unitDaten(v.unitId);
+  if (!d) { ctx.go('bibliothek'); return null; }
+  if (neu) {
+    const letzte = d.voks[d.voks.length - 1];
+    v.partId = letzte?.partId || d.parts[d.parts.length - 1]?.id || '';
+    v.reihenfolge = (d.voks.reduce((m, x) => Math.max(m, x.reihenfolge || 0), 0)) + 1;
+  }
   const latein = d.fach.formenTyp === 'latein';
   const f = v.formen || {};
   const inp = (key, label, val, ph = '') => `<div><label for="vf-${key}">${label}</label><input id="vf-${key}" type="text" value="${esc(val || '')}" placeholder="${esc(ph)}" autocomplete="off" autocapitalize="off"></div>`;
@@ -571,7 +685,7 @@ export async function vokabelFormView({ id }, ctx) {
     <div class="field-row">
       ${latein ? '' : inp('lautschrift', 'Lautschrift', v.lautschrift)}
       <div><label for="vf-wortart">Wortart</label><select id="vf-wortart">${WORTARTEN.map((w) => `<option value="${w}" ${w === v.wortart ? 'selected' : ''}>${WORTART_NAMEN[w]}</option>`).join('')}</select></div>
-      <div><label for="vf-part">Part</label><select id="vf-part">${d.parts.map((p) => `<option value="${p.id}" ${p.id === v.partId ? 'selected' : ''}>${esc(p.kennung)}</option>`).join('')}</select></div>
+      <div><label for="vf-part">Part</label><select id="vf-part">${d.parts.map((p) => `<option value="${p.id}" ${p.id === v.partId ? 'selected' : ''}>${esc(p.kennung)}</option>`).join('')}<option value="__neu" ${d.parts.length ? '' : 'selected'}>➕ neuer Part …</option></select></div>
     </div>
     ${inp('bedeutungen', 'Bedeutungen (mit ; trennen)', v.bedeutungen.join('; '))}
     <h3>Formen</h3>
@@ -590,15 +704,17 @@ export async function vokabelFormView({ id }, ctx) {
         ${inp('steigerung', 'Steigerung', f.steigerung)}`}
     </div>
     ${inp('erklaerung', 'Erklärung (Fremdsprache)', v.erklaerung)}
+    <label for="vf-beispiele">Beispielsätze <span class="muted small">(einer pro Zeile, Übersetzung nach „|“)</span></label>
+    <textarea id="vf-beispiele" style="min-height:90px;font-family:inherit;font-size:17px" placeholder="The path is steep. | Der Weg ist steil.">${esc((v.beispiele || []).map((b) => b.deutsch ? `${b.fremd} | ${b.deutsch}` : b.fremd).join('\n'))}</textarea>
     ${ta('gegenteile', 'Gegenteile', v.gegenteile)}
     ${ta('synonyme', 'Ähnliche Wörter', v.synonyme)}
     ${ta('wortfamilie', 'Wortfamilie', v.wortfamilie)}
     ${ta('stolpersteine', 'Stolpersteine', v.stolpersteine)}
     ${inp('merkhilfe', 'Merkhilfe', v.merkhilfe)}
-    <div class="btn-row"><button class="btn" id="vf-save">Speichern</button></div>
-    <div class="btn-row"><button class="btn danger" id="vf-del">Vokabel löschen</button></div>`;
+    <div class="btn-row"><button class="btn" id="vf-save">${neu ? 'Hinzufügen' : 'Speichern'}</button></div>
+    ${neu ? '' : '<div class="btn-row"><button class="btn danger" id="vf-del">🗑️ Vokabel löschen</button></div>'}`;
   return {
-    title: 'Vokabel bearbeiten', back: `vokabel/${id}`, html,
+    title: neu ? 'Neue Vokabel' : 'Vokabel bearbeiten', back: neu ? `unit/${v.unitId}` : `vokabel/${id}`, html,
     bind(root) {
       const val = (k) => ($(`#vf-${k}`, root)?.value || '').trim();
       const zeilen = (k) => val(k).split('\n').map((s) => s.trim()).filter(Boolean);
@@ -610,16 +726,33 @@ export async function vokabelFormView({ id }, ctx) {
         const keys = latein ? ['genitiv', 'genus', 'deklination', 'adjektiv_endungen', 'konjugation', 'rektion'] : ['plural', 'simple_past', 'past_participle', 'steigerung'];
         keys.forEach((k) => { if (val(k)) formen[k] = val(k); });
         if (latein && val('stammformen')) formen.stammformen = val('stammformen').split(',').map((s) => s.trim()).filter(Boolean);
+        let partId = val('part');
+        if (partId === '__neu') {
+          const kennung = (prompt('Name des neuen Parts (z. B. A, B, C):', d.parts.length ? '' : 'A') || '').trim();
+          if (!kennung) return;
+          const p = d.parts.find((x) => x.kennung.toLowerCase() === kennung.toLowerCase())
+            || { id: uid('p'), unitId: v.unitId, kennung, titel: '', reihenfolge: d.parts.reduce((m, x) => Math.max(m, x.reihenfolge || 0), 0) + 1 };
+          if (!d.parts.includes(p)) await db.put('parts', p);
+          partId = p.id;
+        }
+        const alteBsp = new Map((v.beispiele || []).map((b) => [b.fremd, b]));
+        const beispiele = zeilen('beispiele').map((z) => {
+          const [fremd, ...rest] = z.split('|');
+          const b = { fremd: fremd.trim(), deutsch: rest.join('|').trim() };
+          return { ...b, quelle: alteBsp.get(b.fremd)?.quelle || 'eigene' };
+        }).filter((b) => b.fremd);
         await db.put('vokabeln', {
-          ...v, wort, bedeutungen, formen, lautschrift: latein ? '' : val('lautschrift'), wortart: val('wortart'), partId: val('part'),
+          ...v, wort, bedeutungen, formen, lautschrift: latein ? '' : val('lautschrift'), wortart: val('wortart'), partId, beispiele,
           erklaerung: val('erklaerung'), gegenteile: zeilen('gegenteile'), synonyme: zeilen('synonyme'),
           wortfamilie: zeilen('wortfamilie'), stolpersteine: zeilen('stolpersteine'), merkhilfe: val('merkhilfe'),
           pruefen: false, pruefgrund: ''
         });
-        toast('Gespeichert.');
-        ctx.go(`vokabel/${id}`);
+        if (neu) await db.put('units', { ...d.unit, geaendertAm: new Date().toISOString() });
+        toast(neu ? `„${wort}“ hinzugefügt ✓` : 'Gespeichert.');
+        ctx.go(neu ? `unit/${v.unitId}` : `vokabel/${id}`);
       };
-      $('#vf-del', root).onclick = async () => {
+      const del = $('#vf-del', root);
+      if (del) del.onclick = async () => {
         if (!confirm(`„${v.wort}“ löschen?`)) return;
         const ops = [{ store: 'vokabeln', op: 'del', key: v.id }];
         for (const ls of await db.byIndex('lernstand', 'vokabelId', v.id)) ops.push({ store: 'lernstand', op: 'del', key: ls.key });

@@ -1,6 +1,6 @@
 // Stufe 3/4: Lernplan & Termine, Druckansicht, Erfolge, Eltern-Ansicht
 import * as db from './db.js';
-import { lehrwerkName } from './faecher.js';
+import { lehrwerkName, unitWort } from './faecher.js';
 import { esc, $, $$, toast, uid, plural, datum } from './util.js';
 import * as L from './lernen.js';
 import { starteSitzung, unitKontext } from './lern-views.js';
@@ -50,13 +50,13 @@ export async function planView(_p, ctx) {
   const h = L.heute();
   const termine = (await db.byIndex('termine', 'profilId', ctx.profil.id)).sort((a, b) => a.datum.localeCompare(b.datum));
   const kommend = termine.filter((t) => t.datum >= h), vergangen = termine.filter((t) => t.datum < h);
-  const f = await L.faelligePaare(ctx.profil);
+  const z = await L.faelligZahlen(ctx.profil);
   const html = `
     <div class="card" style="text-align:center">
       <div class="muted">Heute fällig</div>
-      <div class="prozent">${f.faellig.length}</div>
-      <p class="small muted">${f.neuGesamt ? `${f.neuGesamt} Vokabeln noch nie geübt` : ''}</p>
-      <button class="btn block" id="p-faellig" ${f.faellig.length + f.neu.length ? '' : 'disabled'}>🔁 Jetzt wiederholen</button>
+      <div class="prozent">${z.faellig}</div>
+      <p class="small muted">${z.neuHeute ? `+ ${plural(z.neuHeute, 'neue Vokabel', 'neue Vokabeln')} für heute` : z.neu ? 'Tagesziel für neue Vokabeln erreicht ✓' : ''}</p>
+      <button class="btn block" id="p-faellig" ${z.paare ? '' : 'disabled'}>🔁 Jetzt wiederholen</button>
     </div>
     <h3>Vokabeltests</h3>
     ${kommend.length ? kommend.map((t) => terminZeile(t)).join('') : '<div class="card muted">Noch kein Termin eingetragen.</div>'}
@@ -67,7 +67,7 @@ export async function planView(_p, ctx) {
     title: 'Lernplan', back: 'home', html,
     bind(root) {
       $('#p-faellig', root).onclick = async () => {
-        const r = await starteSitzung({ modus: 'faellig', unitIds: (await db.all('units')).map((u) => u.id), zurueck: 'plan' }, ctx.profil);
+        const r = await starteSitzung({ modus: 'faellig', unitIds: await L.profilUnitIds(ctx.profil), zurueck: 'plan' }, ctx.profil);
         if (r.leer) toast(r.leer); else ctx.go('uebung');
       };
     }
@@ -87,32 +87,39 @@ function terminZeile(t) {
 
 export async function terminFormView({ query }, ctx) {
   if (!ctx.profil) { ctx.go('profile'); return null; }
+  const alt = query.id ? await db.get('termine', query.id) : null;
   const { units, lw, fachVonUnit } = await unitKontext();
-  const erlaubt = units.filter((u) => !ctx.profil.fachIds?.length || ctx.profil.fachIds.includes(fachVonUnit.get(u.id).id));
+  const erlaubt = units.filter((u) => !ctx.profil.fachIds?.length || ctx.profil.fachIds.includes(fachVonUnit.get(u.id).id) || alt?.unitIds.includes(u.id))
+    .sort((a, b) => lehrwerkName(lw.get(a.lehrwerkId)).localeCompare(lehrwerkName(lw.get(b.lehrwerkId))) || a.nummer.localeCompare(b.nummer, 'de', { numeric: true }));
   const morgen = L.plusTage(L.heute(), 1);
+  const gewaehlt = (u) => (alt ? alt.unitIds.includes(u.id) : query.unit === u.id);
   const html = `
     <label for="tf-titel">Was wird geschrieben?</label>
-    <input id="tf-titel" type="text" value="Vokabeltest" maxlength="60">
+    <input id="tf-titel" type="text" value="${esc(alt?.titel || 'Vokabeltest')}" maxlength="60">
     <label for="tf-datum">Wann?</label>
-    <input id="tf-datum" type="date" min="${morgen}" value="${L.plusTage(L.heute(), 7)}">
-    <label>Welche Units kommen dran?</label>
+    <input id="tf-datum" type="date" min="${morgen}" value="${esc(alt?.datum || L.plusTage(L.heute(), 7))}">
+    <label>Was kommt dran?</label>
     <div class="card" style="padding:6px 14px">
-      ${erlaubt.length ? erlaubt.map((u) => `<label class="switch" style="display:flex;min-height:48px"><input type="checkbox" class="tf-unit" value="${esc(u.id)}" ${query.unit === u.id ? 'checked' : ''}>
-        <span class="grow">Unit ${esc(u.nummer)}${u.titel ? ' – ' + esc(u.titel) : ''} <span class="muted small">(${esc(lehrwerkName(lw.get(u.lehrwerkId)))})</span></span></label>`).join('') : '<p class="muted">Noch keine Units eingelesen.</p>'}
+      ${erlaubt.length ? erlaubt.map((u) => `<label class="switch" style="display:flex;min-height:48px"><input type="checkbox" class="tf-unit" value="${esc(u.id)}" ${gewaehlt(u) ? 'checked' : ''}>
+        <span class="grow">${unitWort(fachVonUnit.get(u.id))} ${esc(u.nummer)}${u.titel ? ' – ' + esc(u.titel) : ''} <span class="muted small">(${esc(lehrwerkName(lw.get(u.lehrwerkId)))})</span></span></label>`).join('') : '<p class="muted">Noch nichts eingelesen.</p>'}
     </div>
-    <button class="btn block" id="tf-save">Plan erstellen</button>`;
+    ${alt ? '<p class="muted small">Beim Speichern wird der Lernplan neu berechnet. Heute schon erledigte Aufgaben bleiben abgehakt.</p>' : ''}
+    <button class="btn block" id="tf-save">${alt ? 'Speichern' : 'Plan erstellen'}</button>`;
   return {
-    title: 'Neuer Termin', back: 'plan', html,
+    title: alt ? 'Termin bearbeiten' : 'Neuer Termin', back: alt ? `termin/${alt.id}` : 'plan', html,
     bind(root) {
       $('#tf-save', root).onclick = async () => {
         const unitIds = $$('.tf-unit:checked', root).map((c) => c.value);
         const d = $('#tf-datum', root).value;
-        if (!unitIds.length) { toast('Wähle mindestens eine Unit.'); return; }
+        if (!unitIds.length) { toast('Wähle mindestens eine Unit/Lektion.'); return; }
         if (!d || d <= L.heute()) { toast('Der Termin muss in der Zukunft liegen.'); return; }
-        const t = { id: uid('tm'), profilId: ctx.profil.id, titel: $('#tf-titel', root).value.trim() || 'Vokabeltest', datum: d, unitIds, erstelltAm: new Date().toISOString() };
+        const t = { ...(alt || { id: uid('tm'), profilId: ctx.profil.id, erstelltAm: new Date().toISOString() }), titel: $('#tf-titel', root).value.trim() || 'Vokabeltest', datum: d, unitIds };
+        const heuteAlt = alt?.plan?.find((x) => x.datum === L.heute());
         t.plan = erzeugePlan(d, await neueVokabelIds(ctx.profil.id, unitIds));
+        const heuteNeu = t.plan.find((x) => x.datum === L.heute());
+        if (heuteAlt && heuteNeu) heuteNeu.aufgaben.forEach((a) => { if (heuteAlt.aufgaben.some((b) => b.art === a.art && b.erledigt)) a.erledigt = true; });
         await db.put('termine', t);
-        toast('Lernplan erstellt! 📅');
+        toast(alt ? 'Gespeichert ✓' : 'Lernplan erstellt! 📅');
         ctx.go(`termin/${t.id}`);
       };
     }
@@ -123,8 +130,8 @@ export async function terminView({ id }, ctx) {
   if (!ctx.profil) { ctx.go('profile'); return null; }
   const t = await db.get('termine', id);
   if (!t) { ctx.go('plan'); return null; }
-  const { units } = await unitKontext();
-  const namen = t.unitIds.map((uid2) => units.find((u) => u.id === uid2)).filter(Boolean).map((u) => `Unit ${u.nummer}`);
+  const { units, fachVonUnit } = await unitKontext();
+  const namen = t.unitIds.map((uid2) => units.find((u) => u.id === uid2)).filter(Boolean).map((u) => `${unitWort(fachVonUnit.get(u.id))} ${u.nummer}`);
   const h = L.heute();
   const d = L.tageBis(t.datum);
   const stat = await L.kastenStatistik(ctx.profil.id, t.unitIds);
@@ -146,6 +153,7 @@ export async function terminView({ id }, ctx) {
     }).join('')}
     ${d === 0 ? '<div class="msg ok">Viel Erfolg heute! 🍀</div>' : ''}
     <div class="btn-row">
+      <a class="btn secondary" href="#/termin-neu?id=${esc(t.id)}">✏️ Bearbeiten</a>
       <button class="btn secondary" id="tm-neu">Plan neu berechnen</button>
       <button class="btn danger" id="tm-del">Termin löschen</button>
     </div>`;
@@ -186,7 +194,7 @@ export async function druckView({ query }, ctx) {
   const sel = n ? voks.slice(0, n) : voks;
   const rs = L.richtungen(ctx.profil, query.richtung || 'beide');
   const fragen = sel.map((v) => ({ v, r: rs[Math.floor(Math.random() * rs.length)] }));
-  const titel = `${lehrwerkName(lw.get(us[0].lehrwerkId))} – ${us.map((u) => 'Unit ' + u.nummer).join(', ')}`;
+  const titel = `${lehrwerkName(lw.get(us[0].lehrwerkId))} – ${us.map((u) => unitWort(fachVonUnit.get(u.id)) + ' ' + u.nummer).join(', ')}`;
   const zeile = (q, i, loes) => `<tr><td class="nr">${i + 1}.</td><td>${esc(L.frage(q.v, q.r))}</td><td class="${loes ? 'loes' : 'leer'}">${loes ? esc(L.loesungen(q.v, q.r).join('; ')) : ''}</td></tr>`;
   const html = `
     <div class="no-print">
@@ -219,7 +227,7 @@ export async function druckView({ query }, ctx) {
 export async function erfolgeView(_p, ctx) {
   if (!ctx.profil) { ctx.go('profile'); return null; }
   const b = await holeBelohnung(ctx.profil.id);
-  const stat = await L.kastenStatistik(ctx.profil.id);
+  const stat = await L.kastenStatistik(ctx.profil.id, await L.profilUnitIds(ctx.profil));
   const hat = new Map(b.abzeichen.map((a) => [a.id, a]));
   const html = `
     <div class="grid">
@@ -237,6 +245,8 @@ export async function erfolgeView(_p, ctx) {
 
 // ================= Eltern-Ansicht =================
 let elternOffen = false;
+/** Beim Verlassen der Eltern-Ansicht wieder sperren (sonst bliebe sie für das Kind offen) */
+export function elternSperren() { elternOffen = false; }
 
 async function hash(pin, salt) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(salt + ':' + pin));
@@ -287,15 +297,18 @@ export async function elternView(_p, ctx) {
   const tage = [...Array(7)].map((_, i) => L.plusTage(L.heute(), i - 6));
   const karten = await Promise.all(profile.map(async (p) => {
     const [b, stat, ev, tests, termine] = await Promise.all([
-      holeBelohnung(p.id), L.kastenStatistik(p.id), db.byIndex('ereignisse', 'profilId', p.id),
+      holeBelohnung(p.id), L.profilUnitIds(p).then((ids) => L.kastenStatistik(p.id, ids)), db.byIndex('ereignisse', 'profilId', p.id),
       db.byIndex('tests', 'profilId', p.id), db.byIndex('termine', 'profilId', p.id)
     ]);
     const proTag = new Map(tage.map((t) => [t, 0]));
     ev.forEach((e) => { const t = L.isoTag(e.zeitpunkt); if (proTag.has(t)) proTag.set(t, proTag.get(t) + 1); });
     const max = Math.max(1, ...proTag.values());
-    const letzte = ev.reduce((m, e) => (e.zeitpunkt > m ? e.zeitpunkt : m), '');
-    const quote = ev.length ? Math.round(ev.filter((e) => e.korrekt).length / ev.length * 100) : 0;
-    const falschZaehl = new Map();
+    // ältere Antworten sind zusammengefasst (b.archiv), neuere einzeln gespeichert
+    const ar = b.archiv || { antworten: 0, richtig: 0, falschJeVokabel: {}, letzte: '' };
+    const letzte = ev.reduce((m, e) => (e.zeitpunkt > m ? e.zeitpunkt : m), ar.letzte || '');
+    const anzahl = ev.length + ar.antworten;
+    const quote = anzahl ? Math.round((ev.filter((e) => e.korrekt).length + ar.richtig) / anzahl * 100) : 0;
+    const falschZaehl = new Map(Object.entries(ar.falschJeVokabel || {}));
     ev.filter((e) => !e.korrekt && e.vokabelId).forEach((e) => falschZaehl.set(e.vokabelId, (falschZaehl.get(e.vokabelId) || 0) + 1));
     const schwerIds = [...falschZaehl].sort((a, c) => c[1] - a[1]).slice(0, 5);
     const schwer = (await Promise.all(schwerIds.map(([id, n]) => db.get('vokabeln', id).then((v) => v && { v, n })))).filter(Boolean);
@@ -306,7 +319,7 @@ export async function elternView(_p, ctx) {
       <p class="small">Zuletzt aktiv: <strong>${letzte ? datum(letzte) : 'noch nie'}</strong> · Serie: <strong>${plural(b.serie.aktuell, 'Tag', 'Tage')}</strong> (Rekord ${b.serie.rekord}) · ⭐ ${b.punkte}</p>
       <h4 class="muted small">ANTWORTEN DER LETZTEN 7 TAGE</h4>
       <div class="woche">${tage.map((t) => `<div><span style="height:${Math.round(proTag.get(t) / max * 56) + 2}px"></span><small>${new Date(t + 'T12:00').toLocaleDateString('de-DE', { weekday: 'short' })}</small><b>${proTag.get(t)}</b></div>`).join('')}</div>
-      <p class="small">Trefferquote insgesamt: <strong>${quote} %</strong> bei ${ev.length} Antworten</p>
+      <p class="small">Trefferquote insgesamt: <strong>${quote} %</strong> bei ${anzahl} Antworten</p>
       <h4 class="muted small">LERNSTAND (${stat.gesamt} VOKABELN)</h4>
       <div class="kasten">${stat.zaehl.map((n, i) => `<div><span style="height:${stat.gesamt ? Math.max(4, n / stat.gesamt * 60) : 4}px"></span><small>${i ? 'K' + i : 'neu'}</small><b>${n}</b></div>`).join('')}</div>
       <p class="small muted">${stat.sicher} sicher (Kasten 4–5), ${stat.zaehl[0]} noch nie geübt</p>
