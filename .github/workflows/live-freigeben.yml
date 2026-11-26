@@ -84,7 +84,13 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      - name: Browser installieren (bei Störungen der Paketserver bis zu 3 Versuche)
+        run: |
+          for i in 1 2 3; do
+            sudo apt-get update -qq && npx playwright install --with-deps chromium && exit 0
+            echo "Versuch $i fehlgeschlagen, neuer Versuch in 20 s …"; sleep 20
+          done
+          exit 1
       - name: Warten, bis GitHub Pages die neue Version ausliefert
         env:
           NEU: ${{ needs.freigeben.outputs.version }}

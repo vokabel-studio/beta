@@ -24,8 +24,13 @@ jobs:
           cache: npm
       - name: Test-Werkzeug installieren
         run: npm ci
-      - name: Browser installieren
-        run: npx playwright install --with-deps chromium webkit
+      - name: Browser installieren (bei Störungen der Paketserver bis zu 3 Versuche)
+        run: |
+          for i in 1 2 3; do
+            sudo apt-get update -qq && npx playwright install --with-deps chromium webkit && exit 0
+            echo "Versuch $i fehlgeschlagen, neuer Versuch in 20 s …"; sleep 20
+          done
+          exit 1
       - name: Tests ausführen
         run: npx playwright test
       - name: Testbericht speichern (bei Fehlern)
