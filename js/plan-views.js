@@ -422,7 +422,7 @@ export async function elternView(_p, ctx) {
       <p class="small muted">Gratis-Angebote ändern sich häufig. Der Weg über Kopieren und Einfügen bleibt immer möglich.</p>
     </div>
     <a class="card list-item" href="#/datenschutz" style="margin:12px 0"><span class="mehr-icon" aria-hidden="true">🔒</span><span class="grow"><span class="vok-wort">Datenschutz & Sicherheit</span><br>
-      <span class="vok-de">Was die App speichert, wohin Daten gehen, Datenschutzerklärung</span></span><span class="chev" aria-hidden="true">›</span></a>
+      <span class="vok-de">Was die App speichert und wohin Daten gehen</span></span><span class="chev" aria-hidden="true">›</span></a>
     <div class="btn-row"><button class="btn secondary" id="el-zu">🔒 Schließen</button><button class="btn secondary" id="el-pinneu">PIN ändern</button></div>`;
   return {
     title: 'Eltern-Ansicht', back: 'home', html,

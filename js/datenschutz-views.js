@@ -1,27 +1,11 @@
-// Datenschutz & Sicherheit: verständliche Elterninformation + formale Datenschutzerklärung (DSGVO).
+// Datenschutz & Sicherheit: verständliche Elterninformation (eine formale Datenschutzerklärung folgt ggf. später).
 // Ohne Profil und ohne Eltern-PIN erreichbar, damit Eltern sie vor dem Einrichten lesen können.
 import { esc } from './util.js';
-import { BETREIBER } from './config.js';
 
-const STAND = '26.11.2026';
 const link = (url, text) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`;
 
-function verantwortlicher() {
-  const b = BETREIBER || {};
-  const fehlt = '<span class="badge warn">wird ergänzt</span>';
-  return `<p>${b.name ? esc(b.name) : fehlt}<br>${b.anschrift ? esc(b.anschrift).replace(/\n/g, '<br>') : fehlt}<br>
-    E-Mail: ${b.email ? `<a href="mailto:${esc(b.email)}">${esc(b.email)}</a>` : fehlt}</p>`;
-}
-
-export async function datenschutzView({ query }, ctx) {
+export async function datenschutzView(_p, ctx) {
   const html = `
-    <nav class="card" aria-label="Inhalt" style="padding:10px 16px">
-      <ul class="small" style="margin:0;padding-left:18px">
-        <li><a href="#/datenschutz?teil=info">Datenschutz & Sicherheit – verständlich erklärt</a></li>
-        <li><a href="#/datenschutz?teil=erklaerung">Datenschutzerklärung (DSGVO)</a></li>
-      </ul>
-    </nav>
-
     <section class="card text-seite" id="info" aria-labelledby="ds-info">
       <h2 id="ds-info" style="margin-top:0">🔒 Datenschutz & Sicherheit – was Eltern wissen sollten</h2>
       <h3>Kurz gesagt</h3>
@@ -79,52 +63,12 @@ export async function datenschutzView({ query }, ctx) {
       <ul>
         <li><strong>Verlorenes oder ungesperrtes Gerät:</strong> Wer es entsperrt hat, sieht die Daten → Bildschirmsperre verwenden.</li>
         <li><strong>App gelöscht oder Browser-Speicher geleert:</strong> Daten weg → OneDrive-Abgleich oder regelmäßig sichern.</li>
-        <li><strong>Veränderung der App selbst:</strong> Würde jemand das Entwicklerkonto übernehmen, könnte er den App-Code verändern. Dagegen schützen ${BETREIBER?.zweiFaktor ? 'die Zwei-Faktor-Anmeldung des Entwicklerkontos, ' : ''}automatische Tests bei jeder Änderung und die Sicherheitsregel, die begrenzt, wohin Daten überhaupt gehen könnten.</li>
+        <li><strong>Veränderung der App selbst:</strong> Würde jemand das Entwicklerkonto übernehmen, könnte er den App-Code verändern. Dagegen schützen automatische Tests bei jeder Änderung und die Sicherheitsregel, die begrenzt, wohin Daten überhaupt gehen könnten.</li>
       </ul>
     </section>
 
-    <section class="card text-seite" id="erklaerung" aria-labelledby="ds-erkl">
-      <h2 id="ds-erkl" style="margin-top:0">📄 Datenschutzerklärung</h2>
-      <p class="muted small">Stand: ${STAND}</p>
-
-      <h3>1. Verantwortlicher</h3>
-      <p>Verantwortlich für die Web-App „Vokabel-Studio“ (vokabel-studio.github.io) im Sinne der Datenschutz-Grundverordnung (DSGVO):</p>
-      ${verantwortlicher()}
-
-      <h3>2. Grundsätzliches</h3>
-      <p>Vokabel-Studio ist ein kostenloses, nicht-kommerzielles Lernangebot ohne eigenen Server. Die App verarbeitet Daten grundsätzlich <strong>ausschließlich lokal auf dem Gerät</strong> der Nutzerin bzw. des Nutzers. Der Verantwortliche erhält, speichert und sieht keine Daten, die in der App eingegeben werden. Es gibt keine Nutzerkonten beim Verantwortlichen, keine Werbung, keine Analyse- oder Tracking-Dienste und keine Cookies.</p>
-
-      <h3>3. Bereitstellung der App (Hosting)</h3>
-      <p>Die Dateien der App werden über <strong>GitHub Pages</strong> bereitgestellt (GitHub, Inc., 88 Colin P. Kelly Jr. St., San Francisco, CA 94107, USA; ein Unternehmen von Microsoft). Beim Aufruf verarbeitet GitHub technisch notwendige Verbindungsdaten, insbesondere die <strong>IP-Adresse</strong>, Datum und Uhrzeit sowie Browser-Informationen, um die Dateien auszuliefern und den Dienst abzusichern. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an einer sicheren und zuverlässigen Bereitstellung). GitHub ist unter dem EU-US Data Privacy Framework zertifiziert (Art. 45 DSGVO). Näheres: ${link('https://docs.github.com/de/site-policy/privacy-policies/github-general-privacy-statement', 'Datenschutzerklärung von GitHub')}.</p>
-
-      <h3>4. Lokale Speicherung auf dem Gerät</h3>
-      <p>Die App speichert ihre Daten im Speicher des Browsers (IndexedDB und localStorage) auf dem Gerät: Profilname (Vor- oder Spitzname) und Figur, eingelesene Vokabeln, Lernstände, Termine, Testergebnisse, Punkte, Abzeichen und Gutscheine sowie Einstellungen. Diese Daten verlassen das Gerät nicht, außer durch die unten beschriebenen, von den Nutzern selbst eingeschalteten Funktionen. Sie bleiben gespeichert, bis sie in der App gelöscht werden („Sichern & Abgleichen › Gefahrenzone“) oder der Browser-Speicher geleert bzw. die App entfernt wird. Die Speicherung ist für die Funktion der App erforderlich (§ 25 Abs. 2 Nr. 2 TDDDG; Art. 6 Abs. 1 lit. b bzw. f DSGVO).</p>
-
-      <h3>5. Optionale Funktionen mit Datenübertragung</h3>
-      <p>Die folgenden Funktionen sind freiwillig und werden von den Nutzern bzw. Eltern selbst eingerichtet und ausgelöst. Die Übertragung erfolgt direkt vom Gerät an den jeweiligen Anbieter, nicht über den Verantwortlichen. Rechtsgrundlage ist die Einwilligung durch das Einrichten und Nutzen der Funktion (Art. 6 Abs. 1 lit. a DSGVO); sie kann jederzeit durch Entfernen bzw. Trennen in der App widerrufen werden.</p>
-      <p><strong>a) KI-Auswertung (Foto/Text einlesen, Sätze prüfen).</strong> Mit einem eigenen Zugangsschlüssel der Eltern werden das Foto bzw. der Text einer Vokabelseite oder ein selbst geschriebener Satz an den gewählten Anbieter übertragen und dort verarbeitet. Die Nutzung richtet sich nach den Bedingungen, die die Eltern mit dem Anbieter vereinbart haben. Bei kostenlosen Zugängen können Anbieter Eingaben zur Verbesserung ihrer Dienste verwenden. Anbieter: Google (Gemini, ${link('https://policies.google.com/privacy', 'Datenschutz')}, ${link('https://ai.google.dev/gemini-api/terms', 'Nutzungsbedingungen')}), Mistral AI, Frankreich (${link('https://mistral.ai/terms', 'Datenschutz')}), Groq, Inc., USA (${link('https://groq.com/privacy-policy/', 'Datenschutz')}), OpenRouter, Inc., USA (${link('https://openrouter.ai/privacy', 'Datenschutz')}). Bei Anbietern in den USA kann eine Übermittlung in ein Drittland stattfinden.</p>
-      <p><strong>b) Abgleich über OneDrive.</strong> Nach Anmeldung mit einem Microsoft-Konto speichert die App eine Datei mit allen App-Daten (ohne KI-Schlüssel und Eltern-PIN) im App-Ordner des <strong>eigenen</strong> OneDrive der Nutzer. Die App erhält nur Zugriff auf diesen Ordner sowie auf Name und E-Mail-Adresse des Kontos (zur Anzeige). Anbieter: Microsoft Ireland Operations Ltd., Dublin, Irland (${link('https://privacy.microsoft.com/de-de/privacystatement', 'Datenschutzerklärung von Microsoft')}).</p>
-      <p><strong>c) Spracheingabe und Vorlesen.</strong> Hierfür nutzt die App Funktionen des Browsers bzw. Betriebssystems. Bei der Spracheingabe kann die Aufnahme vom Hersteller (z. B. Google oder Apple) zur Erkennung verarbeitet werden; es gelten dessen Datenschutzbestimmungen.</p>
-      <p><strong>d) Weitergabe durch die Nutzer.</strong> Sicherungsdateien, Vokabelpakete und die QR-Code-Übertragung erstellen bzw. übertragen Daten nur auf Veranlassung der Nutzer und nur an die von ihnen gewählten Empfänger. Die QR-Übertragung erfolgt direkt zwischen zwei Geräten, ohne Internet.</p>
-      <p><strong>e) Links zu ChatGPT und Gemini.</strong> Die App enthält Links zu diesen Diensten. Was dort eingegeben wird, unterliegt den Bedingungen der jeweiligen Anbieter.</p>
-
-      <h3>6. Kinder</h3>
-      <p>Die App richtet sich an Schülerinnen und Schüler. Die Einrichtung (Profile, KI-Anbindung, Cloud-Abgleich) soll durch die Eltern bzw. Sorgeberechtigten erfolgen; sie erteilen auch die Einwilligung in die optionalen Funktionen (Art. 8 DSGVO). Für Profile genügt ein Vor- oder Spitzname.</p>
-
-      <h3>7. Ihre Rechte</h3>
-      <p>Sie haben das Recht auf Auskunft (Art. 15), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18), Datenübertragbarkeit (Art. 20), Widerspruch (Art. 21) und Widerruf erteilter Einwilligungen (Art. 7 Abs. 3 DSGVO). Da der Verantwortliche keine Daten aus der App erhält, können Sie die meisten Rechte direkt in der App ausüben: Daten ansehen, bearbeiten, exportieren (Sicherungsdatei) und löschen. Für Daten bei GitHub, den KI-Anbietern oder Microsoft wenden Sie sich bitte an den jeweiligen Anbieter.</p>
-      <p>Sie haben außerdem das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren, z. B. bei der Landesbeauftragten für Datenschutz und Informationsfreiheit Nordrhein-Westfalen (${link('https://www.ldi.nrw.de', 'ldi.nrw.de')}).</p>
-
-      <h3>8. Datensicherheit</h3>
-      <p>Die App wird ausschließlich verschlüsselt (HTTPS) ausgeliefert. Eine Content-Security-Policy beschränkt technisch, mit welchen Diensten die App kommunizieren darf. Zugangsschlüssel und Anmeldedaten verbleiben auf dem Gerät. Für den Schutz des Geräts selbst (Bildschirmsperre, Updates) sind die Nutzer verantwortlich.</p>
-
-      <h3>9. Änderungen</h3>
-      <p>Diese Datenschutzerklärung wird angepasst, wenn sich die App oder die Rechtslage ändert. Es gilt die jeweils in der App angezeigte Fassung.</p>
     </section>`;
   return {
-    title: 'Datenschutz & Sicherheit', back: ctx.profil ? 'history' : 'profile', hideProfile: !ctx.profil, html, keepScroll: !!query.teil,
-    bind(root) {
-      if (query.teil) root.querySelector(`#${query.teil === 'erklaerung' ? 'erklaerung' : 'info'}`)?.scrollIntoView({ block: 'start' });
-    }
+    title: 'Datenschutz & Sicherheit', back: ctx.profil ? 'history' : 'profile', hideProfile: !ctx.profil, html
   };
 }

@@ -20,11 +20,3 @@ export const CLOUD = {
   onedrive: BETA ? '09734763-35cd-4acf-9567-ca06532069de' : '625efbb8-9ad1-4993-bc82-42b27a26d177'
 };
 
-// Angaben für die Datenschutzerklärung (Verantwortlicher). Leer = „wird ergänzt“.
-// zweiFaktor: true erst eintragen, wenn das GitHub-Konto der Organisation die Zwei-Faktor-Anmeldung nutzt.
-export const BETREIBER = {
-  name: '',
-  anschrift: '',
-  email: '',
-  zweiFaktor: false
-};

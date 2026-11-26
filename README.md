@@ -32,7 +32,7 @@ Wichtig: Safari und die Home-Bildschirm-App haben getrennte Speicher. Am besten 
 | + | OpenRouter als vierter kostenloser KI-Anbieter (nur Gratis-Modelle), Einlesen per kopiertem Text (Google Lens / Live Text) statt Foto | ✅ (Beta) |
 | + | Geräte abgleichen: Handy zu Handy per QR-Code (offline), automatisch über OneDrive; Zusammenführen statt Überschreiben, Gelöscht-Liste. Google Drive, Dropbox, WebDAV geplant | ✅ (Beta) |
 | + | Bedienung überarbeitet (Startseite, „Sichern & Abgleichen“), Textgröße einstellbar, Barrierefreiheit nach WCAG 2.2 AA (automatisch geprüft für alle Styles, hell und dunkel) | ✅ (Beta) |
-| + | Datenschutz & Sicherheit: Elterninformation und Datenschutzerklärung in der App, Content-Security-Policy (App spricht nur mit KI-Anbietern und Microsoft) | ✅ (Beta) |
+| + | Datenschutz & Sicherheit: Elterninformation in der App, Content-Security-Policy (App spricht nur mit KI-Anbietern und Microsoft) | ✅ (Beta) |
 
 **Bekannte Einschränkung iPhone/iPad:** Die Spracheingabe der App liefert unter iOS nur beim ersten Versuch nach dem App-Start Ton (Gerätetests Nov. 2026). Auf iOS wird deshalb das Tastatur-Diktat empfohlen; der App-Mikrofonknopf ist dort ausgeblendet.
 

@@ -1,13 +1,12 @@
 // Datenschutz-Seite und Sicherheitsregel (Content-Security-Policy)
 import { test, expect, geh, profilAnlegen } from './helfer.js';
 
-test('Datenschutz-Seite ohne Profil erreichbar, mit Elterninfo und Datenschutzerklärung', async ({ page }) => {
+test('Datenschutz-Seite ohne Profil erreichbar', async ({ page }) => {
   await geh(page, '');
   await page.getByRole('link', { name: /Datenschutz: Alle Daten bleiben auf diesem Gerät/ }).click();
   await expect(page.getByRole('heading', { name: /was Eltern wissen sollten/ })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Ist die App ein Einfallstor für Angriffe auf meine Daten?' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: /Datenschutzerklärung/ })).toBeVisible();
-  await expect(page.getByRole('heading', { name: '7. Ihre Rechte' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Restrisiken – ehrlich benannt' })).toBeVisible();
 });
 
 test('Link auf der Eltern-PIN-Seite', async ({ page }) => {
