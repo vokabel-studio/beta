@@ -133,7 +133,7 @@ export function feiere(liste) {
   box.innerHTML = `<div class="gs-overlay-karte" role="dialog" aria-label="Gutschein freigeschaltet">
     <div class="gs-overlay-kopf">🎟️ Gutschein freigeschaltet!</div>
     ${gutscheinHtml(f)}
-    <p class="small muted">Zeig ihn deinen Eltern – du findest ihn unter „Erfolge“.</p>
+    <p class="small muted">Zeig ihn deinen Eltern – du findest ihn auf der Startseite unter „Meine Gutscheine“.</p>
     <button class="btn block">Super! 🎉</button></div>`;
   document.body.appendChild(box);
   fx.konfetti(3, { erzwingen: !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches });

@@ -1,5 +1,5 @@
 // Gutscheine der Eltern: anlegen, freischalten, nur mit PIN einlösen
-import { test, expect, geh, profilAnlegen, demoLaden, alle, elternPinSetzen, testRichtigMachen } from './helfer.js';
+import { test, expect, geh, profilAnlegen, demoLaden, alle, app, elternPinSetzen, testRichtigMachen } from './helfer.js';
 
 test('Gutschein anlegen, durch Test freischalten, mit PIN einlösen', async ({ page }) => {
   await profilAnlegen(page, 'Lena', { latein: true });
@@ -25,17 +25,34 @@ test('Gutschein anlegen, durch Test freischalten, mit PIN einlösen', async ({ p
 
   await geh(page, 'home');
   await expect(page.getByText('Du hast einen Gutschein zum Einlösen')).toBeVisible();
-  await geh(page, 'erfolge');
-  await page.click('[data-einloesen]');
-  await page.fill('.gs-pin input', '0000');
-  await page.locator('.gs-pin .btn').first().click();
-  await expect(page.locator('#toast')).toContainText('Falsche PIN');
-  await page.fill('.gs-pin input', '4711');
-  await page.locator('.gs-pin .btn').first().click();
+  // eigene Seite „Meine Gutscheine“, erreichbar von der Startseite
+  await page.getByRole('link', { name: /Meine Gutscheine/ }).click();
+  await expect(page.getByRole('heading', { name: /Bereit zum Einlösen/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Auf dem Weg/ })).toBeVisible();
+  // das Kind löst selbst ein (ohne PIN, mit Rückfrage)
+  await page.getByRole('button', { name: /Eis essen gehen als eingelöst markieren/ }).click();
   await expect(page.locator('#toast')).toContainText('Eingelöst');
+  await expect(page.getByRole('heading', { name: /Schon eingelöst \(1\)/ })).toBeVisible();
   const b = (await alle(page, 'belohnungen'))[0];
   expect(b.freigeschaltet).toHaveLength(1);
   expect(b.freigeschaltet[0].eingeloestAm).toBeTruthy();
+});
+
+test('Eltern markieren einen Gutschein als eingelöst', async ({ page }) => {
+  await profilAnlegen(page, 'Tim');
+  await app(page, async (m) => {
+    const p = (await m.db.all('profile'))[0];
+    await m.G.erstelle([p.id], { text: 'Kino', emoji: '🎬', art: 'punkte', anzahl: 1, minProzent: 75, wiederholen: false });
+    await m.B.nachSitzung(p.id, {});
+    await m.G.pruefe(p.id);
+  });
+  await elternPinSetzen(page);
+  await expect(page.locator('#gs-karte')).toContainText('Kino');
+  await page.click('[data-gs-ein]');
+  await expect(page.locator('#toast')).toContainText('eingelöst');
+  await expect(page.locator('#gs-karte')).toContainText('Schon eingelöst (1)');
+  await geh(page, 'gutscheine');
+  await expect(page.getByRole('heading', { name: /Schon eingelöst \(1\)/ })).toBeVisible();
 });
 
 test('Eltern-Bereich sperrt sich beim Verlassen', async ({ page }) => {

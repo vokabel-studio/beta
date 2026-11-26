@@ -209,6 +209,8 @@ export async function homeView(_p, ctx) {
   const [fz, termin, bel] = await Promise.all([nVok ? L.faelligZahlen(ctx.profil) : { faellig: 0, neu: 0, neuHeute: 0 }, naechsterTermin(ctx.profil.id), hole(ctx.profil.id)]);
   const offen = LV.offeneSitzung(ctx.profil.id);
   const gutscheine = await (await import('./gutscheine.js')).offene(ctx.profil.id);
+  const GV = await import('./gutschein-views.js');
+  const gz = await GV.gutscheinZahlen(ctx.profil.id);
   const tb = termin ? tageBis(termin.datum) : 0;
   const heuteInfo = {
     faellig: fz.faellig, neu: fz.neu, neuHeute: fz.neuHeute, punkte: bel.punkte, serie: bel.serie.letzterLerntag ? bel.serie.aktuell : 0, termin,
@@ -224,7 +226,7 @@ export async function homeView(_p, ctx) {
     <p class="muted">${plural(units.length, 'Unit', 'Units')} · ${plural(nVok, 'Vokabel', 'Vokabeln')} auf diesem Gerät</p>
     ${cloud?.status === 'anmelden' ? '<a class="msg warn" href="#/backup" style="display:block;text-decoration:none">☁️ Abgleich pausiert: Bitte kurz neu bei OneDrive anmelden <strong>›</strong></a>' : ''}
     ${erinnerung ? `<a class="msg warn" href="#/backup" style="display:block;text-decoration:none">💾 ${erinnerung.seit === null ? 'Deine Daten liegen bisher nur auf diesem Gerät.' : `Letzte Sicherung vor ${erinnerung.seit} Tagen.`} <strong>Jetzt sichern ›</strong></a>` : ''}
-    ${gutscheine.length ? `<a class="msg ok" href="#/erfolge" style="display:block;text-decoration:none">🎟️ Du hast ${gutscheine.length === 1 ? 'einen Gutschein' : `${gutscheine.length} Gutscheine`} zum Einlösen: <strong>${esc(gutscheine.map((g) => g.text).join(', '))}</strong> ›</a>` : ''}
+    ${gutscheine.length ? `<a class="msg ok" href="#/gutscheine" style="display:block;text-decoration:none">🎟️ Du hast ${gutscheine.length === 1 ? 'einen Gutschein' : `${gutscheine.length} Gutscheine`} zum Einlösen: <strong>${esc(Object.entries(gutscheine.reduce((m, g) => ((m[g.text] = (m[g.text] || 0) + 1), m), {})).map(([t, n]) => (n > 1 ? `${n}× ${t}` : t)).join(', '))}</strong> ›</a>` : ''}
     ${offen ? LV.fortsetzenKarte(offen) : ''}
     ${nVok ? `<div class="card heute">
       <div class="check-head"><strong class="grow">Heute</strong>${heuteInfo.serie ? `<span class="badge warn">🔥 ${heuteInfo.serie}</span>` : ''}</div>
@@ -242,8 +244,12 @@ export async function homeView(_p, ctx) {
     <a class="card list-item" href="#/erfolge" style="margin:12px 0">
       <span class="mehr-icon" aria-hidden="true">${E('erfolge')}</span>
       <span class="grow"><span class="vok-wort">Meine Erfolge</span><br>
-        <span class="vok-de">${E('punkt')} ${heuteInfo.punkte} Punkte · ${E('serie')} ${plural(heuteInfo.serie, 'Tag', 'Tage')} am Stück · Abzeichen & Gutscheine</span></span>
-      <span class="chev" aria-hidden="true">›</span></a></nav>
+        <span class="vok-de">${E('punkt')} ${heuteInfo.punkte} Punkte · ${E('serie')} ${plural(heuteInfo.serie, 'Tag', 'Tage')} am Stück · Abzeichen</span></span>
+      <span class="chev" aria-hidden="true">›</span></a>
+    ${gz.gesamt ? `<a class="card list-item" href="#/gutscheine" style="margin:12px 0">
+      <span class="mehr-icon" aria-hidden="true">🎟️</span>
+      <span class="grow"><span class="vok-wort">Meine Gutscheine</span><br><span class="vok-de">${GV.gutscheinLinkText(gz)}</span></span>
+      ${gz.bereit ? `<span class="badge ok">${gz.bereit}</span>` : ''}<span class="chev" aria-hidden="true">›</span></a>` : ''}</nav>
     ${zuletzt.length ? `<h2 data-h="3">Zuletzt bearbeitet</h2><div class="card" style="padding:0"><ul class="list">
       ${zuletzt.map((u) => `<li><a class="list-item" href="#/unit/${esc(u.id)}"><span class="grow">
         <span class="vok-wort">${uWort(getFach(lehrwerke.get(u.lehrwerkId)?.fachId))} ${esc(u.nummer)}${u.titel ? ' – ' + esc(u.titel) : ''}</span><br>
