@@ -145,7 +145,8 @@ async function microsoftNachbauen(context, cloud) {
       const ziel = new URL(url.searchParams.get('redirect_uri'));
       ziel.searchParams.set('code', 'code-123');
       ziel.searchParams.set('state', url.searchParams.get('state'));
-      return route.fulfill({ status: 302, headers: { location: ziel.toString() } });
+      // WebKit im Test kann keine 302-Weiterleitung nachbauen → Rückleitung per Skript (wirkt wie die echte Microsoft-Seite)
+      return route.fulfill({ status: 200, contentType: 'text/html', body: `<script>location.replace(${JSON.stringify(ziel.toString())})</script>` });
     }
     if (url.pathname.endsWith('/token')) {
       const form = new URLSearchParams(req.postData() ?? req.postDataBuffer()?.toString() ?? '');
