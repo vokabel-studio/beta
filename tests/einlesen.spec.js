@@ -9,6 +9,8 @@ async function bisZumPrompt(page, nummer = '3') {
   await geh(page, 'import');
   await page.fill('#w-nr', nummer);
   await page.click('#w-weiter');
+  // warten, bis Schritt 2 wirklich angezeigt wird (dort gibt es wieder einen Knopf #w-weiter)
+  await expect(page.locator('#w-copy')).toBeAttached();
 }
 
 async function uebernehmen(page) {
