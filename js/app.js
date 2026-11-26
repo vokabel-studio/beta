@@ -10,7 +10,7 @@ import * as T from './teilen-views.js';
 import { hoerquizView } from './hoerquiz.js';
 import { qrSendenView, qrEmpfangenView } from './abgleich-views.js';
 import { BETA, LS_PREFIX } from './config.js';
-import { setzeDesign } from './design.js';
+import { setzeDesign, setzeTextgroesse } from './design.js';
 import { setzeStyle, style } from './styles.js';
 import { setzeAnimationen } from './effekte.js';
 import { avatarHtml } from './avatare.js';
@@ -85,6 +85,7 @@ async function render() {
   ctx.profil = id ? await db.get('profile', id) : null;
   if (!ctx.profil && id) setzeAktivesProfil(null);
   setzeDesign(ctx.profil?.einstellungen?.design || 'auto');
+  setzeTextgroesse(ctx.profil?.einstellungen?.textgroesse || 'normal');
   setzeStyle(ctx.profil?.einstellungen?.style || 'standard');
   setzeAnimationen(ctx.profil?.einstellungen?.animationen);
 

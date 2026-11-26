@@ -32,7 +32,7 @@ test('Erster Start: Willkommen, Profil anlegen, Beispiel-Units laden', async ({ 
   await expect(page.getByText('2 Units · 26 Vokabeln auf diesem Gerät')).toBeVisible();
   // Profil nur Englisch → nur die 16 englischen Vokabeln zählen, nicht Vokabel × Richtung
   await expect(page.locator('.card.heute')).toContainText('16 neue Vokabeln warten');
-  await expect(page.getByText('Du hast noch nie gesichert')).toBeVisible();
+  await expect(page.getByText('Deine Daten liegen bisher nur auf diesem Gerät')).toBeVisible();
 });
 
 test('Beta-Adresse nutzt eigenen Speicher und zeigt BETA', async ({ page }) => {

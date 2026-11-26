@@ -38,14 +38,15 @@ export async function abgleichKarte() {
           ${bereit ? `<button class="btn" data-verbinden="${id}">Verbinden</button>` : '<span class="badge">bald</span>'}</div>`;
       }).join('')}
     </div>`;
-  return `<div class="card" id="abgleich-karte">
-    <h3 style="margin-top:0">🔄 Geräte abgleichen</h3>
-    <h4 style="margin:10px 0 4px">📲 Handy zu Handy (QR-Code)</h4>
-    <p class="small" style="margin-top:0">Ohne Konto und ohne Internet: Ein Handy zeigt QR-Codes, das andere liest sie mit der Kamera. Vorhandenes wird zusammengeführt, nichts überschrieben.</p>
-    <div class="btn-row"><a class="btn soft" href="#/qr-senden">📤 Senden</a><a class="btn soft" href="#/qr-empfangen">📥 Empfangen</a></div>
-    <h4 style="margin:16px 0 4px">☁️ Automatisch über die Cloud</h4>
+  return `<section class="card" id="abgleich-karte" aria-labelledby="ab-titel">
+    <h2 data-h="3" style="margin-top:0" id="ab-titel">☁️ Automatisch abgleichen ${A ? '' : '<span class="badge ok">empfohlen</span>'}</h2>
     ${verbundenHtml}
-  </div>`;
+  </section>
+  <section class="card" aria-labelledby="qr-titel">
+    <h2 data-h="3" style="margin-top:0" id="qr-titel">📲 Handy zu Handy (QR-Code)</h2>
+    <p class="small" style="margin-top:0">Ohne Konto und ohne Internet: Ein Handy zeigt QR-Codes, das andere liest sie mit der Kamera. Gut für ein neues Handy oder um einem Geschwisterkind Vokabeln zu geben. Vorhandenes wird zusammengeführt, nichts überschrieben.</p>
+    <div class="btn-row"><a class="btn soft" href="#/qr-senden">📤 Senden</a><a class="btn soft" href="#/qr-empfangen">📥 Empfangen</a></div>
+  </section>`;
 }
 
 export function bindAbgleich(root, ctx) {
@@ -201,7 +202,7 @@ export async function zeigeErgebnis(root, ctx, obj) {
   if (!S.istPaket(obj)) { box.innerHTML = '<div class="msg err">Die empfangenen Daten sind nicht lesbar.</div>'; return; }
   const u = S.uebersicht(obj);
   box.innerHTML = `<div class="card">
-    <h3 style="margin-top:0">✓ Alles empfangen</h3>
+    <h2 data-h="3" style="margin-top:0">✓ Alles empfangen</h2>
     <p>${u.profile.length ? `Profile: <strong>${esc(u.profile.join(', '))}</strong><br>` : ''}${plural(u.units, 'Unit', 'Units')} · ${plural(u.vokabeln, 'Vokabel', 'Vokabeln')} · Stand ${esc(zeit(u.stand))}</p>
     <p class="small muted">Wird mit den Daten auf diesem Handy zusammengeführt: Neueres gewinnt, nichts wird einfach überschrieben.</p>
     <button class="btn block" id="qr-uebernehmen">Übernehmen</button></div>`;
