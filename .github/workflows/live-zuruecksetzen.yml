@@ -1,0 +1,42 @@
+# Notbremse „Live zurücksetzen“: macht die letzte Freigabe in der Live-App rückgängig
+# Bedienung: GitHub › vokabel-studio/beta › Actions › „Live zurücksetzen“ › Run workflow
+name: Live zurücksetzen
+
+on:
+  workflow_dispatch:
+    inputs:
+      grund:
+        description: 'Warum? (kurz)'
+        required: false
+        default: ''
+
+concurrency:
+  group: live
+  cancel-in-progress: false
+
+jobs:
+  zuruecksetzen:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Live-App holen
+        uses: actions/checkout@v4
+        with:
+          repository: vokabel-studio/vokabel-studio.github.io
+          token: ${{ secrets.LIVE_TOKEN }}
+          fetch-depth: 2
+      - name: Letzte Freigabe rückgängig machen
+        env:
+          GRUND: ${{ inputs.grund }}
+        run: |
+          letzte=$(git log -1 --format=%s)
+          echo "Letzte Änderung: $letzte"
+          case "$letzte" in
+            "Live: Version "*) ;;
+            *) echo "::error::Die letzte Änderung der Live-App ist keine Freigabe („$letzte“). Bitte von Hand prüfen."; exit 1 ;;
+          esac
+          git config user.name "Vokabel-Studio Freigabe"
+          git config user.email "freigabe@users.noreply.github.com"
+          git revert --no-edit HEAD
+          git commit --amend -m "Zurückgesetzt: $letzte" -m "${GRUND:-ohne Angabe}"
+          git push
+          echo "## ↩️ Zurückgesetzt: $letzte" >> "$GITHUB_STEP_SUMMARY"

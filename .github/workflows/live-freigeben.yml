@@ -1,0 +1,102 @@
+# Knopf „Live freigeben“: kopiert die getestete Beta in die Live-App (vokabel-studio.github.io)
+# Bedienung: GitHub › vokabel-studio/beta › Actions › „Live freigeben“ › Run workflow
+# Voraussetzung (einmalig): Secret LIVE_TOKEN mit Schreibrecht auf vokabel-studio/vokabel-studio.github.io
+name: Live freigeben
+
+on:
+  workflow_dispatch:
+    inputs:
+      notiz:
+        description: 'Was ist neu? (kurz, erscheint in der Versionsgeschichte)'
+        required: false
+        default: ''
+
+concurrency:
+  group: live
+  cancel-in-progress: false
+
+jobs:
+  tests:
+    name: Tests
+    uses: ./.github/workflows/tests.yml
+
+  freigeben:
+    name: In die Live-App kopieren
+    needs: tests
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.neu }}
+    steps:
+      - name: Beta holen
+        uses: actions/checkout@v4
+        with:
+          path: beta
+      - name: Live-App holen
+        uses: actions/checkout@v4
+        with:
+          repository: vokabel-studio/vokabel-studio.github.io
+          token: ${{ secrets.LIVE_TOKEN }}
+          path: live
+      - name: Versionsnummer prüfen
+        id: version
+        run: |
+          neu=$(grep -oP "PREFIX \+ '\K[^']+" beta/sw.js)
+          alt=$(grep -oP "PREFIX \+ '\K[^']+" live/sw.js || echo "unbekannt")
+          echo "Live: $alt → neu: $neu"
+          if [ "$neu" = "$alt" ]; then
+            echo "::error::Die Versionsnummer ($neu) ist dieselbe wie in der Live-App. Bitte in sw.js und js/config.js erhöhen, sonst bekommen die Geräte das Update nicht."
+            exit 1
+          fi
+          echo "neu=$neu" >> "$GITHUB_OUTPUT"
+          echo "alt=$alt" >> "$GITHUB_OUTPUT"
+      - name: Dateien übertragen
+        run: rsync -a --delete --exclude-from=beta/.github/live-ausschluss.txt beta/ live/
+      - name: Speichern und veröffentlichen
+        working-directory: live
+        env:
+          NOTIZ: ${{ inputs.notiz }}
+          NEU: ${{ steps.version.outputs.neu }}
+          ALT: ${{ steps.version.outputs.alt }}
+        run: |
+          git config user.name "Vokabel-Studio Freigabe"
+          git config user.email "freigabe@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then echo "Nichts zu übertragen."; exit 0; fi
+          git commit -m "Live: Version $NEU (vorher $ALT)" -m "${NOTIZ:-Freigegeben aus der Beta}" -m "Beta-Stand: ${GITHUB_SHA::7}"
+          git push
+          {
+            echo "## ✅ Version $NEU ist freigegeben"
+            echo "Vorher: $ALT · Beta-Stand: \`${GITHUB_SHA::7}\`"
+            [ -n "$NOTIZ" ] && echo "" && echo "$NOTIZ"
+            echo ""
+            echo "In 1–2 Minuten unter https://vokabel-studio.github.io/ sichtbar. Falls etwas nicht stimmt: Workflow „Live zurücksetzen“."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  pruefen:
+    name: Live-App prüfen
+    needs: freigeben
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Warten, bis GitHub Pages die neue Version ausliefert
+        env:
+          NEU: ${{ needs.freigeben.outputs.version }}
+        run: |
+          for i in $(seq 1 40); do
+            if curl -fsS "https://vokabel-studio.github.io/sw.js?t=$(date +%s)" | grep -q "'$NEU'"; then echo "Version $NEU ist online."; exit 0; fi
+            sleep 15
+          done
+          echo "::error::Nach 10 Minuten liefert GitHub Pages die neue Version noch nicht aus."
+          exit 1
+      - name: Kurztest der Live-App
+        env:
+          LIVE_URL: https://vokabel-studio.github.io/
+          ERWARTETE_VERSION: ${{ needs.freigeben.outputs.version }}
+        run: npx playwright test

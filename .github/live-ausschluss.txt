@@ -1,0 +1,10 @@
+# Diese Dateien bleiben in der Beta und werden NICHT in die Live-App kopiert
+.git
+.github
+node_modules
+tests
+test-results
+playwright-report
+package.json
+package-lock.json
+playwright.config.js

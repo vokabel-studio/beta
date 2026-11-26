@@ -1,0 +1,39 @@
+# Automatische Tests bei jeder Änderung (Android = Chromium, iPhone = WebKit/Safari-Technik)
+name: Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: Tests (Android + iPhone)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Test-Werkzeug installieren
+        run: npm ci
+      - name: Browser installieren
+        run: npx playwright install --with-deps chromium webkit
+      - name: Tests ausführen
+        run: npx playwright test
+      - name: Testbericht speichern (bei Fehlern)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: testbericht
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14

@@ -1,0 +1,1533 @@
+{
+ "format": "vokabel-studio-backup",
+ "schemaVersion": 1,
+ "exportiertAm": "2026-11-26T11:05:33.308Z",
+ "umfang": "alles",
+ "inhalte": {
+  "faecher": [
+   {
+    "id": "englisch",
+    "name": "Englisch",
+    "icon": "🇬🇧",
+    "kurz": "en",
+    "fremdsprache": {
+     "code": "en-GB",
+     "name": "Englisch"
+    },
+    "vorlesen": {
+     "stimmeSprache": "en-GB"
+    },
+    "spracheingabe": {
+     "fremd": "en-GB",
+     "deutsch": "de-DE"
+    },
+    "formenTyp": "englisch"
+   },
+   {
+    "id": "latein",
+    "name": "Latein",
+    "icon": "🏛️",
+    "kurz": "la",
+    "fremdsprache": {
+     "code": "la",
+     "name": "Latein"
+    },
+    "vorlesen": {
+     "stimmeSprache": "it-IT",
+     "hinweis": "Für Latein wird eine italienische Stimme genutzt. Die Aussprache ist daher nur ungefähr."
+    },
+    "spracheingabe": {
+     "fremd": null,
+     "deutsch": "de-DE"
+    },
+    "formenTyp": "latein"
+   }
+  ],
+  "lehrwerke": [
+   {
+    "id": "lw_access_1",
+    "fachId": "englisch",
+    "titel": "English G Access G9",
+    "verlag": "Cornelsen",
+    "band": "1",
+    "klasse": 5,
+    "ausgabe": "Ausgabe NRW",
+    "vorinstalliert": true
+   },
+   {
+    "id": "lw_access_3",
+    "fachId": "englisch",
+    "titel": "English G Access G9",
+    "verlag": "Cornelsen",
+    "band": "3",
+    "klasse": 7,
+    "ausgabe": "Ausgabe NRW",
+    "vorinstalliert": true
+   },
+   {
+    "id": "lw_adeamus_1",
+    "fachId": "latein",
+    "titel": "Adeamus!",
+    "verlag": "Cornelsen",
+    "band": "1",
+    "klasse": 7,
+    "ausgabe": "Ausgabe NRW",
+    "vorinstalliert": true
+   },
+   {
+    "id": "lw_demo_en",
+    "fachId": "englisch",
+    "titel": "Beispiel-Lehrwerk Englisch",
+    "verlag": "",
+    "band": "",
+    "klasse": 6
+   },
+   {
+    "id": "lw_demo_la",
+    "fachId": "latein",
+    "titel": "Beispiel-Lehrwerk Latein",
+    "verlag": "",
+    "band": "",
+    "klasse": 7
+   }
+  ],
+  "units": [
+   {
+    "id": "u_kmppwo1vn6l",
+    "lehrwerkId": "lw_demo_en",
+    "nummer": "1",
+    "titel": "A trip to the mountains",
+    "importIds": [
+     "i_13k977vkkvo"
+    ],
+    "erstelltAm": "2026-11-26T11:05:31.763Z",
+    "geaendertAm": "2026-11-26T11:05:31.763Z"
+   },
+   {
+    "id": "u_syoacn1p8ol",
+    "lehrwerkId": "lw_demo_la",
+    "nummer": "1",
+    "titel": "In villa",
+    "importIds": [
+     "i_1i7hukos4nx"
+    ],
+    "erstelltAm": "2026-11-26T11:05:31.773Z",
+    "geaendertAm": "2026-11-26T11:05:31.773Z"
+   }
+  ],
+  "parts": [
+   {
+    "id": "p_1cjsl9aaa26",
+    "unitId": "u_kmppwo1vn6l",
+    "kennung": "A",
+    "titel": "",
+    "reihenfolge": 1
+   },
+   {
+    "id": "p_1jlk0lpch5y",
+    "unitId": "u_syoacn1p8ol",
+    "kennung": "A",
+    "titel": "",
+    "reihenfolge": 1
+   },
+   {
+    "id": "p_ahf0ov1c7xc",
+    "unitId": "u_kmppwo1vn6l",
+    "kennung": "B",
+    "titel": "",
+    "reihenfolge": 2
+   }
+  ],
+  "vokabeln": [
+   {
+    "id": "v_18it78z17qs",
+    "unitId": "u_syoacn1p8ol",
+    "partId": "p_1jlk0lpch5y",
+    "wort": "et",
+    "lautschrift": "",
+    "wortart": "konjunktion",
+    "bedeutungen": [
+     "und",
+     "auch"
+    ],
+    "formen": {},
+    "erklaerung": "",
+    "andereSprachen": [],
+    "beispiele": [],
+    "gegenteile": [],
+    "synonyme": [],
+    "wortfamilie": [],
+    "stolpersteine": [],
+    "merkhilfe": "",
+    "seite": "Demo",
+    "reihenfolge": 9,
+    "pruefen": false,
+    "pruefgrund": "",
+    "importId": "i_1i7hukos4nx"
+   },
+   {
+    "id": "v_1apuya2fjbw",
+    "unitId": "u_syoacn1p8ol",
+    "partId": "p_1jlk0lpch5y",
+    "wort": "amīcus",
+    "lautschrift": "",
+    "wortart": "nomen",
+    "bedeutungen": [
+     "Freund"
+    ],
+    "formen": {
+     "genitiv": "amīcī",
+     "genus": "m",
+     "deklination": "o"
+    },
+    "erklaerung": "",
+    "andereSprachen": [],
+    "beispiele": [],
+    "gegenteile": [],
+    "synonyme": [],
+    "wortfamilie": [
+     "Amigo",
+     "amicable (engl.)"
+    ],
+    "stolpersteine": [],
+    "merkhilfe": "",
+    "seite": "Demo",
+    "reihenfolge": 1,
+    "pruefen": false,
+    "pruefgrund": "",
+    "importId": "i_1i7hukos4nx"
+   },
+   {
+    "id": "v_1bl5mcadahy",
+    "unitId": "u_kmppwo1vn6l",
+    "partId": "p_1cjsl9aaa26",
+    "wort": "valley",
+    "lautschrift": "ˈvæli",
+    "wortart": "nomen",
+    "bedeutungen": [
+     "Tal"
+    ],
+    "formen": {},
+    "erklaerung": "",
+    "andereSprachen": [],
+    "beispiele": [
+     {
+      "fremd": "There is a small village in the valley.",
+      "deutsch": "Im Tal liegt ein kleines Dorf.",
+      "quelle": "ki"
+     }
+    ],
+    "gegenteile": [],
+    "synonyme": [],
+    "wortfamilie": [],
+    "stolpersteine": [
+     "Plural: valleys (nicht 'vallies')."
+    ],
+    "merkhilfe": "",
+    "seite": "Demo",
+    "reihenfolge": 2,
+    "pruefen": false,
+    "pruefgrund": "",
+    "importId": "i_13k977vkkvo"
+   },
+   {
+    "id": "v_1e7oerv1skf",
+    "unitId": "u_syoacn1p8ol",
+    "partId": "p_1jlk0lpch5y",
+    "wort": "villa",
+    "lautschrift": "",
+    "wortart": "nomen",
+    "bedeutungen": [
+     "Landhaus",
+     "Haus"
+    ],
+    "formen": {
+     "genitiv": "villae",
+     "genus": "f",
+     "deklination": "a"
+    },
+    "erklaerung": "",
+    "andereSprachen": [],
+    "beispiele": [],
+    "gegenteile": [],
+    "synonyme": [],
+    "wortfamilie": [
+     "Villa",
+     "village (engl.)"
+    ],
+    "stolpersteine": [],
+    "merkhilfe": "",
+    "seite": "Demo",
+    "reihenfolge": 3,
+    "pruefen": false,
+    "pruefgrund": "",
+    "importId": "i_1i7hukos4nx"
+   },
+   {
+    "id": "v_1f8ogb217el",
+    "unitId": "u_kmppwo1vn6l",
+    "partId": "p_1cjsl9aaa26",
+    "wort": "lake",
+    "lautschrift": "leɪk",
+    "wortart": "nomen",
+    "bedeutungen": [
+     "See"
+    ],
+    "formen": {},
+    "erklaerung": "",
+    "andereSprachen": [],
+    "beispiele": [],
+    "gegenteile": [],
+    "synonyme": [],
+    "wortfamilie": [],
+    "stolpersteine": [
+     "der See = lake, die See (Meer) = sea."
+    ],
+    "merkhilfe": "",
+    "seite": "Demo",
+    "reihenfolge": 5,
+    "pruefen": false,
+    "pruefgrund": "",
+    "importId": "i_13k977vkkvo"
+   },
+   {
+    "id": "v_1fsk8bvrhcn",
+    "unitId": "u_syoacn1p8ol",
+    "partId": "p_1jlk0lpch5y",
+    "wort": "servus",
+    "lautschrift": "",
+    "wortart": "nomen",
+    "bedeutungen": [
+     "Sklave",
+     "Diener"
+    ],
+    "formen": {
+     "genitiv": "servī",
+     "genus": "m",
+     "deklination": "o"
+    },
+    "erklaerung": "",
+    "andereSprachen": [],
+    "beispiele": [],
+    "gegenteile": [],
+    "synonyme": [],
+    "wortfamilie": [
+     "Servus! (Gruß)",
+     "servieren"
+    ],
+    "stolpersteine": [],
+    "merkhilfe": "",
+    "seite": "Demo",
+    "reihenfolge": 4,
+    "pruefen": false,
+    "pruefgrund": "",
+    "importId": "i_1i7hukos4nx"
+   },
+   {
+    "id": "v_1g3waln17gb",
+    "unitId": "u_syoacn1p8ol",
+    "partId": "p_1jlk0lpch5y",
+    "wort": "vidēre",
+    "lautschrift": "",
+    "wortart": "verb",
+    "bedeutungen": [
+     "sehen"
+    ],
+    "formen": {
+     "konjugation": "e",
+     "stammformen": [
+      "vidēre",
+      "videō",
+      "vīdī",
+      "vīsum"
+     ]
+    },
+    "erklaerung": "",
+    "andereSprachen": [],
+    "beispiele": [],
+    "gegenteile": [],
+    "synonyme": [],
+    "wortfamilie": [
+     "Video",
+     "Vision"
+    ],
+    "stolpersteine": [],
+    "merkhilfe": "",
+    "seite": "Demo",
+    "reihenfolge": 6,
+    "pruefen": false,
+    "pruefgrund": "",
+    "importId": "i_1i7hukos4nx"
+   },
+   {
+    "id": "v_1lr28bx10tx",
+    "unitId": "u_kmppwo1vn6l",
+    "partId": "p_1cjsl9aaa26",
+    "wort": "path",
+    "lautschrift": "pɑːθ",
+    "wortart": "nomen",
+    "bedeutungen": [
+     "Pfad",
+     "Weg"
+    ],
+    "formen": {},
+    "erklaerung": "",
+    "andereSprachen": [],
+    "beispiele": [],
+    "gegenteile": [],
+    "synonyme": [
+     "way",
+     "track"
+    ],
+    "wortfamilie": [],
+    "stolpersteine": [],
+    "merkhilfe": "",
+    "seite": "Demo",
+    "reihenfolge": 8,
+    "pruefen": false,
+    "pruefgrund": "",
+    "importId": "i_13k977vkkvo"
+   },
+   {
+    "id": "v_1mbxrmv1wf6",
+    "unitId": "u_kmppwo1vn6l",
+    "partId": "p_ahf0ov1c7xc",
+    "wort": "map",
+    "lautschrift": "mæp",
+    "wortart": "nomen",
+    "bedeutungen": [
+     "Landkarte",
+     "Stadtplan"
+    ],
+    "formen": {},
+    "erklaerung": "",
+    "andereSprachen": [],
+    "beispiele": [],
+    "gegenteile": [],
+    "synonyme": [],
+    "wortfamilie": [],
+    "stolpersteine": [
+     "Falscher Freund: map ≠ Mappe (Mappe = folder)."
+    ],
+    "merkhilfe": "",
+    "seite": "Demo",
+    "reihenfolge": 11,
+    "pruefen": false,
+    "pruefgrund": "",
+    "importId": "i_13k977vkkvo"
+   },
+   {
+    "id": "v_1ot47nm8qt4",
+    "unitId": "u_kmppwo1vn6l",
+    "partId": "p_1cjsl9aaa26",
+    "wort": "mountain",
+    "lautschrift": "ˈmaʊntən",
+    "wortart": "nomen",
+    "bedeutungen": [
+     "Berg"
+    ],
+    "formen": {},
+    "erklaerung": "",
+    "andereSprachen": [],
+    "beispiele": [
+     {
+      "fremd": "Snowdon is the highest mountain in Wales.",
+      "deutsch": "Der Snowdon ist der höchste Berg in Wales.",
+      "quelle": "ki"
+     }
+    ],
+    "gegenteile": [],
+    "synonyme": [],
+    "wortfamilie": [
+     "mountainous (bergig)"
+    ],
+    "stolpersteine": [
+     "Endung schwach gesprochen: ˈmaʊntən."
+    ],
+    "merkhilfe": "",
+    "seite": "Demo",
+    "reihenfolge": 1,
+    "pruefen": false,
+    "pruefgrund": "",
+    "importId": "i_13k977vkkvo"
+   },
+   {
+    "id": "v_1ptgahn1eoa",
+    "unitId": "u_kmppwo1vn6l",
+    "partId": "p_1cjsl9aaa26",
+    "wort": "view",
+    "lautschrift": "vjuː",
+    "wortart": "nomen",
+    "bedeutungen": [
+     "Aussicht",
+     "Blick"
+    ],
+    "formen": {},
+    "erklaerung": "what you can see from a place",
+    "andereSprachen": [],
+    "beispiele": [],
+    "gegenteile": [],
+    "synonyme": [],
+    "wortfamilie": [],
+    "stolpersteine": [
+     "a view OF something – Blick AUF etwas."
+    ],
+    "merkhilfe": "",
+    "seite": "Demo",
+    "reihenfolge": 7,
+    "pruefen": false,
+    "pruefgrund": "",
+    "importId": "i_13k977vkkvo"
+   },
+   {
+    "id": "v_1qxiwab1umr",
+    "unitId": "u_syoacn1p8ol",
+    "partId": "p_1jlk0lpch5y",
+    "wort": "amīca",
+    "lautschrift": "",
+    "wortart": "nomen",
+    "bedeutungen": [
+     "Freundin"
+    ],
+    "formen": {
+     "genitiv": "amīcae",
+     "genus": "f",
+     "deklination": "a"
+    },
+    "erklaerung": "",
+    "andereSprachen": [],
+    "beispiele": [],
+    "gegenteile": [],
+    "synonyme": [],
+    "wortfamilie": [],
+    "stolpersteine": [],
+    "merkhilfe": "",
+    "seite": "Demo",
+    "reihenfolge": 2,
+    "pruefen": false,
+    "pruefgrund": "",
+    "importId": "i_1i7hukos4nx"
+   },
+   {
+    "id": "v_1t3pdsf12i9",
+    "unitId": "u_kmppwo1vn6l",
+    "partId": "p_ahf0ov1c7xc",
+    "wort": "weather",
+    "lautschrift": "ˈweðə",
+    "wortart": "nomen",
+    "bedeutungen": [
+     "Wetter"
+    ],
+    "formen": {},
+    "erklaerung": "",
+    "andereSprachen": [],
+    "beispiele": [],
+    "gegenteile": [],
+    "synonyme": [],
+    "wortfamilie": [],
+    "stolpersteine": [
+     "Gleiche Aussprache wie whether (ob)."
+    ],
+    "merkhilfe": "",
+    "seite": "Demo",
+    "reihenfolge": 9,
+    "pruefen": false,
+    "pruefgrund": "",
+    "importId": "i_13k977vkkvo"
+   },
+   {
+    "id": "v_1ui1gis1dai",
+    "unitId": "u_kmppwo1vn6l",
+    "partId": "p_1cjsl9aaa26",
+    "wort": "(to) climb",
+    "lautschrift": "klaɪm",
+    "wortart": "verb",
+    "bedeutungen": [
+     "klettern",
+     "besteigen"
+    ],
+    "formen": {},
+    "erklaerung": "",
+    "andereSprachen": [],
+    "beispiele": [
+     {
+      "fremd": "Let's climb to the top!",
+      "deutsch": "Lass uns bis zum Gipfel klettern!",
+      "quelle": "ki"
+     }
+    ],
+    "gegenteile": [],
+    "synonyme": [],
+    "wortfamilie": [
+     "climber (Kletterer/Kletterin)"
+    ],
+    "stolpersteine": [
+     "Das b wird nicht gesprochen."
+    ],
+    "merkhilfe": "",
+    "seite": "Demo",
+    "reihenfolge": 6,
+    "pruefen": false,
+    "pruefgrund": "",
+    "importId": "i_13k977vkkvo"
+   },
+   {
+    "id": "v_1wcdu9y1fxa",
+    "unitId": "u_kmppwo1vn6l",
+    "partId": "p_ahf0ov1c7xc",
+    "wort": "(to) hurt",
+    "lautschrift": "hɜːt",
+    "wortart": "verb",
+    "bedeutungen": [
+     "verletzen",
+     "wehtun"
+    ],
+    "formen": {
+     "simple_past": "hurt",
+     "past_participle": "hurt"
+    },
+    "erklaerung": "",
+    "andereSprachen": [],
+    "beispiele": [],
+    "gegenteile": [],
+    "synonyme": [],
+    "wortfamilie": [],
+    "stolpersteine": [
+     "hurt – hurt – hurt"
+    ],
+    "merkhilfe": "",
+    "seite": "Demo",
+    "reihenfolge": 15,
+    "pruefen": false,
+    "pruefgrund": "",
+    "importId": "i_13k977vkkvo"
+   },
+   {
+    "id": "v_1yhofn01q04",
+    "unitId": "u_syoacn1p8ol",
+    "partId": "p_1jlk0lpch5y",
+    "wort": "nōn",
+    "lautschrift": "",
+    "wortart": "adverb",
+    "bedeutungen": [
+     "nicht"
+    ],
+    "formen": {},
+    "erklaerung": "",
+    "andereSprachen": [],
+    "beispiele": [],
+    "gegenteile": [],
+    "synonyme": [],
+    "wortfamilie": [],
+    "stolpersteine": [],
+    "merkhilfe": "",
+    "seite": "Demo",
+    "reihenfolge": 10,
+    "pruefen": false,
+    "pruefgrund": "",
+    "importId": "i_1i7hukos4nx"
+   },
+   {
+    "id": "v_2hvxc7v9lii",
+    "unitId": "u_kmppwo1vn6l",
+    "partId": "p_ahf0ov1c7xc",
+    "wort": "(to) get lost",
+    "lautschrift": "",
+    "wortart": "wendung",
+    "bedeutungen": [
+     "sich verirren",
+     "sich verlaufen"
+    ],
+    "formen": {
+     "simple_past": "got lost",
+     "past_participle": "got lost"
+    },
+    "erklaerung": "",
+    "andereSprachen": [],
+    "beispiele": [],
+    "gegenteile": [],
+    "synonyme": [],
+    "wortfamilie": [],
+    "stolpersteine": [],
+    "merkhilfe": "",
+    "seite": "Demo",
+    "reihenfolge": 12,
+    "pruefen": false,
+    "pruefgrund": "",
+    "importId": "i_13k977vkkvo"
+   },
+   {
+    "id": "v_h8xp9999bg3",
+    "unitId": "u_kmppwo1vn6l",
+    "partId": "p_1cjsl9aaa26",
+    "wort": "castle",
+    "lautschrift": "ˈkɑːsl",
+    "wortart": "nomen",
+    "bedeutungen": [
+     "Burg",
+     "Schloss"
+    ],
+    "formen": {},
+    "erklaerung": "",
+    "andereSprachen": [],
+    "beispiele": [
+     {
+      "fremd": "We visited an old castle near the sea.",
+      "deutsch": "Wir haben eine alte Burg am Meer besucht.",
+      "quelle": "ki"
+     }
+    ],
+    "gegenteile": [],
+    "synonyme": [],
+    "wortfamilie": [],
+    "stolpersteine": [
+     "Das t wird nicht gesprochen."
+    ],
+    "merkhilfe": "",
+    "seite": "Demo",
+    "reihenfolge": 4,
+    "pruefen": false,
+    "pruefgrund": "",
+    "importId": "i_13k977vkkvo"
+   },
+   {
+    "id": "v_iyr5c91onpy",
+    "unitId": "u_kmppwo1vn6l",
+    "partId": "p_ahf0ov1c7xc",
+    "wort": "dangerous",
+    "lautschrift": "ˈdeɪndʒərəs",
+    "wortart": "adjektiv",
+    "bedeutungen": [
+     "gefährlich"
+    ],
+    "formen": {},
+    "erklaerung": "",
+    "andereSprachen": [
+     {
+      "sprache": "fr",
+      "wort": "dangereux, dangereuse",
+      "bedeutung": ""
+     }
+    ],
+    "beispiele": [],
+    "gegenteile": [
+     "safe"
+    ],
+    "synonyme": [],
+    "wortfamilie": [
+     "danger (Gefahr)"
+    ],
+    "stolpersteine": [],
+    "merkhilfe": "",
+    "seite": "Demo",
+    "reihenfolge": 13,
+    "pruefen": false,
+    "pruefgrund": "",
+    "importId": "i_13k977vkkvo"
+   },
+   {
+    "id": "v_lwcw9sds37q",
+    "unitId": "u_kmppwo1vn6l",
+    "partId": "p_ahf0ov1c7xc",
+    "wort": "helicopter",
+    "lautschrift": "ˈhelɪkɒptə",
+    "wortart": "nomen",
+    "bedeutungen": [
+     "Hubschrauber"
+    ],
+    "formen": {},
+    "erklaerung": "",
+    "andereSprachen": [],
+    "beispiele": [],
+    "gegenteile": [],
+    "synonyme": [],
+    "wortfamilie": [],
+    "stolpersteine": [
+     "Betonung auf der ersten Silbe: HE-licopter."
+    ],
+    "merkhilfe": "",
+    "seite": "Demo",
+    "reihenfolge": 16,
+    "pruefen": false,
+    "pruefgrund": "",
+    "importId": "i_13k977vkkvo"
+   },
+   {
+    "id": "v_nueni57xgf9",
+    "unitId": "u_kmppwo1vn6l",
+    "partId": "p_ahf0ov1c7xc",
+    "wort": "suddenly",
+    "lautschrift": "ˈsʌdnli",
+    "wortart": "adverb",
+    "bedeutungen": [
+     "plötzlich"
+    ],
+    "formen": {},
+    "erklaerung": "",
+    "andereSprachen": [],
+    "beispiele": [
+     {
+      "fremd": "Suddenly it started to rain.",
+      "deutsch": "Plötzlich fing es an zu regnen.",
+      "quelle": "ki"
+     }
+    ],
+    "gegenteile": [],
+    "synonyme": [],
+    "wortfamilie": [],
+    "stolpersteine": [],
+    "merkhilfe": "",
+    "seite": "Demo",
+    "reihenfolge": 14,
+    "pruefen": false,
+    "pruefgrund": "",
+    "importId": "i_13k977vkkvo"
+   },
+   {
+    "id": "v_qvdisg1jkdv",
+    "unitId": "u_syoacn1p8ol",
+    "partId": "p_1jlk0lpch5y",
+    "wort": "labōrāre",
+    "lautschrift": "",
+    "wortart": "verb",
+    "bedeutungen": [
+     "arbeiten"
+    ],
+    "formen": {
+     "konjugation": "a",
+     "stammformen": [
+      "labōrāre",
+      "labōrō",
+      "labōrāvī",
+      "labōrātum"
+     ]
+    },
+    "erklaerung": "",
+    "andereSprachen": [],
+    "beispiele": [],
+    "gegenteile": [],
+    "synonyme": [],
+    "wortfamilie": [
+     "Labor"
+    ],
+    "stolpersteine": [],
+    "merkhilfe": "",
+    "seite": "Demo",
+    "reihenfolge": 7,
+    "pruefen": false,
+    "pruefgrund": "",
+    "importId": "i_1i7hukos4nx"
+   },
+   {
+    "id": "v_u16ngi155vk",
+    "unitId": "u_syoacn1p8ol",
+    "partId": "p_1jlk0lpch5y",
+    "wort": "bonus",
+    "lautschrift": "",
+    "wortart": "adjektiv",
+    "bedeutungen": [
+     "gut"
+    ],
+    "formen": {
+     "adjektiv_endungen": "-a, -um"
+    },
+    "erklaerung": "",
+    "andereSprachen": [],
+    "beispiele": [],
+    "gegenteile": [],
+    "synonyme": [],
+    "wortfamilie": [
+     "Bonus",
+     "Bonbon"
+    ],
+    "stolpersteine": [],
+    "merkhilfe": "",
+    "seite": "Demo",
+    "reihenfolge": 8,
+    "pruefen": false,
+    "pruefgrund": "",
+    "importId": "i_1i7hukos4nx"
+   },
+   {
+    "id": "v_wrfsao17da7",
+    "unitId": "u_kmppwo1vn6l",
+    "partId": "p_ahf0ov1c7xc",
+    "wort": "foggy",
+    "lautschrift": "ˈfɒɡi",
+    "wortart": "adjektiv",
+    "bedeutungen": [
+     "neblig"
+    ],
+    "formen": {},
+    "erklaerung": "",
+    "andereSprachen": [],
+    "beispiele": [],
+    "gegenteile": [
+     "clear",
+     "sunny"
+    ],
+    "synonyme": [],
+    "wortfamilie": [
+     "fog (Nebel)"
+    ],
+    "stolpersteine": [],
+    "merkhilfe": "",
+    "seite": "Demo",
+    "reihenfolge": 10,
+    "pruefen": false,
+    "pruefgrund": "",
+    "importId": "i_13k977vkkvo"
+   },
+   {
+    "id": "v_ydzqfa5l6av",
+    "unitId": "u_syoacn1p8ol",
+    "partId": "p_1jlk0lpch5y",
+    "wort": "vocāre",
+    "lautschrift": "",
+    "wortart": "verb",
+    "bedeutungen": [
+     "rufen",
+     "nennen"
+    ],
+    "formen": {
+     "konjugation": "a",
+     "stammformen": [
+      "vocāre",
+      "vocō",
+      "vocāvī",
+      "vocātum"
+     ]
+    },
+    "erklaerung": "",
+    "andereSprachen": [],
+    "beispiele": [],
+    "gegenteile": [],
+    "synonyme": [],
+    "wortfamilie": [
+     "Vokal",
+     "vocal (engl.)"
+    ],
+    "stolpersteine": [],
+    "merkhilfe": "",
+    "seite": "Demo",
+    "reihenfolge": 5,
+    "pruefen": false,
+    "pruefgrund": "",
+    "importId": "i_1i7hukos4nx"
+   },
+   {
+    "id": "v_z5y0rn68vr1",
+    "unitId": "u_kmppwo1vn6l",
+    "partId": "p_1cjsl9aaa26",
+    "wort": "sheep",
+    "lautschrift": "ʃiːp",
+    "wortart": "nomen",
+    "bedeutungen": [
+     "Schaf",
+     "Schafe"
+    ],
+    "formen": {
+     "plural": "sheep"
+    },
+    "erklaerung": "",
+    "andereSprachen": [],
+    "beispiele": [
+     {
+      "fremd": "There are a lot of sheep on the hills.",
+      "deutsch": "Auf den Hügeln gibt es viele Schafe.",
+      "quelle": "ki"
+     }
+    ],
+    "gegenteile": [],
+    "synonyme": [],
+    "wortfamilie": [],
+    "stolpersteine": [
+     "Plural ist auch sheep – kein -s!",
+     "Nicht verwechseln mit ship (Schiff)."
+    ],
+    "merkhilfe": "",
+    "seite": "Demo",
+    "reihenfolge": 3,
+    "pruefen": false,
+    "pruefgrund": "",
+    "importId": "i_13k977vkkvo"
+   }
+  ],
+  "lernsaetze": [
+   {
+    "id": "s_145haoe1ubg",
+    "unitId": "u_syoacn1p8ol",
+    "partId": "p_1jlk0lpch5y",
+    "fremd": "Amīcus villam videt.",
+    "deutsch": "Der Freund sieht das Landhaus.",
+    "vokabelIds": [
+     "v_1apuya2fjbw",
+     "v_1e7oerv1skf",
+     "v_1g3waln17gb"
+    ],
+    "importId": "i_1i7hukos4nx"
+   },
+   {
+    "id": "s_1iaczbo1eqo",
+    "unitId": "u_syoacn1p8ol",
+    "partId": "p_1jlk0lpch5y",
+    "fremd": "Servus labōrat.",
+    "deutsch": "Der Sklave arbeitet.",
+    "vokabelIds": [
+     "v_1fsk8bvrhcn",
+     "v_qvdisg1jkdv"
+    ],
+    "importId": "i_1i7hukos4nx"
+   },
+   {
+    "id": "s_1rxueq3fprl",
+    "unitId": "u_kmppwo1vn6l",
+    "partId": "p_ahf0ov1c7xc",
+    "fremd": "Suddenly the weather was foggy.",
+    "deutsch": "Plötzlich war das Wetter neblig.",
+    "vokabelIds": [
+     "v_nueni57xgf9",
+     "v_1t3pdsf12i9",
+     "v_wrfsao17da7"
+    ],
+    "importId": "i_13k977vkkvo"
+   },
+   {
+    "id": "s_26hgttkx221",
+    "unitId": "u_kmppwo1vn6l",
+    "partId": "p_ahf0ov1c7xc",
+    "fremd": "Without a map we got lost.",
+    "deutsch": "Ohne Karte haben wir uns verlaufen.",
+    "vokabelIds": [
+     "v_1mbxrmv1wf6",
+     "v_2hvxc7v9lii"
+    ],
+    "importId": "i_13k977vkkvo"
+   },
+   {
+    "id": "s_2kp384lap72",
+    "unitId": "u_kmppwo1vn6l",
+    "partId": "p_1cjsl9aaa26",
+    "fremd": "We climb the mountain and enjoy the view.",
+    "deutsch": "Wir besteigen den Berg und genießen die Aussicht.",
+    "vokabelIds": [
+     "v_1ui1gis1dai",
+     "v_1ot47nm8qt4",
+     "v_1ptgahn1eoa"
+    ],
+    "importId": "i_13k977vkkvo"
+   },
+   {
+    "id": "s_x9ahlgqxczr",
+    "unitId": "u_kmppwo1vn6l",
+    "partId": "p_1cjsl9aaa26",
+    "fremd": "The sheep are in the valley.",
+    "deutsch": "Die Schafe sind im Tal.",
+    "vokabelIds": [
+     "v_z5y0rn68vr1",
+     "v_1bl5mcadahy"
+    ],
+    "importId": "i_13k977vkkvo"
+   },
+   {
+    "id": "s_z5x5vrbt2t7",
+    "unitId": "u_syoacn1p8ol",
+    "partId": "p_1jlk0lpch5y",
+    "fremd": "Amīca bona nōn labōrat.",
+    "deutsch": "Die gute Freundin arbeitet nicht.",
+    "vokabelIds": [
+     "v_1qxiwab1umr",
+     "v_u16ngi155vk",
+     "v_1yhofn01q04",
+     "v_qvdisg1jkdv"
+    ],
+    "importId": "i_1i7hukos4nx"
+   }
+  ],
+  "satzbau": [
+   {
+    "id": "b_115fsjk1u0f",
+    "unitId": "u_kmppwo1vn6l",
+    "partId": "p_ahf0ov1c7xc",
+    "deutsch": "Plötzlich wurde es neblig.",
+    "loesung": "Suddenly it got foggy.",
+    "alternativen": [
+     "It suddenly got foggy."
+    ],
+    "ablenker": [
+     "fog",
+     "was"
+    ],
+    "vokabelIds": [
+     "v_nueni57xgf9",
+     "v_wrfsao17da7"
+    ],
+    "importId": "i_13k977vkkvo"
+   },
+   {
+    "id": "b_1gy2ztgqsn0",
+    "unitId": "u_syoacn1p8ol",
+    "partId": "p_1jlk0lpch5y",
+    "deutsch": "Der Freund ruft den Sklaven.",
+    "loesung": "Amīcus servum vocat.",
+    "alternativen": [
+     "Servum amīcus vocat."
+    ],
+    "ablenker": [
+     "servus",
+     "vocāre"
+    ],
+    "vokabelIds": [
+     "v_1apuya2fjbw",
+     "v_1fsk8bvrhcn",
+     "v_ydzqfa5l6av"
+    ],
+    "importId": "i_1i7hukos4nx"
+   },
+   {
+    "id": "b_652c0op7sor",
+    "unitId": "u_kmppwo1vn6l",
+    "partId": "p_1cjsl9aaa26",
+    "deutsch": "Es gibt viele Schafe im Tal.",
+    "loesung": "There are a lot of sheep in the valley.",
+    "alternativen": [
+     "There are many sheep in the valley."
+    ],
+    "ablenker": [
+     "sheeps",
+     "is"
+    ],
+    "vokabelIds": [
+     "v_z5y0rn68vr1",
+     "v_1bl5mcadahy"
+    ],
+    "importId": "i_13k977vkkvo"
+   }
+  ],
+  "material": []
+ },
+ "profile": [
+  {
+   "id": "pr_rxut2e1t0nv",
+   "name": "Testkind",
+   "avatar": "🦸",
+   "fachIds": [
+    "englisch",
+    "latein"
+   ],
+   "lehrwerkIds": [],
+   "erstelltAm": "2026-11-26T11:05:30.797Z",
+   "einstellungen": {
+    "abfrageRichtung": "beide",
+    "vorlesenAutomatisch": false,
+    "sprechtempo": 0.9,
+    "tagesziel": 20,
+    "design": "auto",
+    "animationen": false
+   }
+  }
+ ],
+ "lerndaten": {
+  "lernstand": [
+   {
+    "key": "pr_rxut2e1t0nv|v_18it78z17qs|fd",
+    "profilId": "pr_rxut2e1t0nv",
+    "vokabelId": "v_18it78z17qs",
+    "richtung": "fd",
+    "box": 1,
+    "richtig": 0,
+    "falsch": 1,
+    "serieRichtig": 0,
+    "faelligAm": "2026-11-26",
+    "zuletzt": "2026-11-26T11:05:33.257Z"
+   },
+   {
+    "key": "pr_rxut2e1t0nv|v_1apuya2fjbw|fd",
+    "profilId": "pr_rxut2e1t0nv",
+    "vokabelId": "v_1apuya2fjbw",
+    "richtung": "fd",
+    "box": 1,
+    "richtig": 1,
+    "falsch": 0,
+    "serieRichtig": 1,
+    "faelligAm": "2026-11-27",
+    "zuletzt": "2026-11-26T11:05:33.264Z"
+   },
+   {
+    "key": "pr_rxut2e1t0nv|v_1bl5mcadahy|fd",
+    "profilId": "pr_rxut2e1t0nv",
+    "vokabelId": "v_1bl5mcadahy",
+    "richtung": "fd",
+    "box": 1,
+    "richtig": 1,
+    "falsch": 0,
+    "serieRichtig": 1,
+    "faelligAm": "2026-11-27",
+    "zuletzt": "2026-11-26T11:05:33.270Z"
+   },
+   {
+    "key": "pr_rxut2e1t0nv|v_1e7oerv1skf|fd",
+    "profilId": "pr_rxut2e1t0nv",
+    "vokabelId": "v_1e7oerv1skf",
+    "richtung": "fd",
+    "box": 1,
+    "richtig": 1,
+    "falsch": 0,
+    "serieRichtig": 1,
+    "faelligAm": "2026-11-27",
+    "zuletzt": "2026-11-26T11:05:33.273Z"
+   },
+   {
+    "key": "pr_rxut2e1t0nv|v_1f8ogb217el|fd",
+    "profilId": "pr_rxut2e1t0nv",
+    "vokabelId": "v_1f8ogb217el",
+    "richtung": "fd",
+    "box": 1,
+    "richtig": 0,
+    "falsch": 1,
+    "serieRichtig": 0,
+    "faelligAm": "2026-11-26",
+    "zuletzt": "2026-11-26T11:05:33.274Z"
+   },
+   {
+    "key": "pr_rxut2e1t0nv|v_1fsk8bvrhcn|fd",
+    "profilId": "pr_rxut2e1t0nv",
+    "vokabelId": "v_1fsk8bvrhcn",
+    "richtung": "fd",
+    "box": 1,
+    "richtig": 1,
+    "falsch": 0,
+    "serieRichtig": 1,
+    "faelligAm": "2026-11-27",
+    "zuletzt": "2026-11-26T11:05:33.282Z"
+   },
+   {
+    "key": "pr_rxut2e1t0nv|v_1g3waln17gb|fd",
+    "profilId": "pr_rxut2e1t0nv",
+    "vokabelId": "v_1g3waln17gb",
+    "richtung": "fd",
+    "box": 1,
+    "richtig": 1,
+    "falsch": 0,
+    "serieRichtig": 1,
+    "faelligAm": "2026-11-27",
+    "zuletzt": "2026-11-26T11:05:33.284Z"
+   },
+   {
+    "key": "pr_rxut2e1t0nv|v_1lr28bx10tx|fd",
+    "profilId": "pr_rxut2e1t0nv",
+    "vokabelId": "v_1lr28bx10tx",
+    "richtung": "fd",
+    "box": 1,
+    "richtig": 1,
+    "falsch": 0,
+    "serieRichtig": 1,
+    "faelligAm": "2026-11-27",
+    "zuletzt": "2026-11-26T11:05:33.285Z"
+   },
+   {
+    "key": "pr_rxut2e1t0nv|v_1mbxrmv1wf6|fd",
+    "profilId": "pr_rxut2e1t0nv",
+    "vokabelId": "v_1mbxrmv1wf6",
+    "richtung": "fd",
+    "box": 1,
+    "richtig": 0,
+    "falsch": 1,
+    "serieRichtig": 0,
+    "faelligAm": "2026-11-26",
+    "zuletzt": "2026-11-26T11:05:33.287Z"
+   },
+   {
+    "key": "pr_rxut2e1t0nv|v_1ot47nm8qt4|fd",
+    "profilId": "pr_rxut2e1t0nv",
+    "vokabelId": "v_1ot47nm8qt4",
+    "richtung": "fd",
+    "box": 1,
+    "richtig": 1,
+    "falsch": 0,
+    "serieRichtig": 1,
+    "faelligAm": "2026-11-27",
+    "zuletzt": "2026-11-26T11:05:33.288Z"
+   },
+   {
+    "key": "pr_rxut2e1t0nv|v_1ptgahn1eoa|fd",
+    "profilId": "pr_rxut2e1t0nv",
+    "vokabelId": "v_1ptgahn1eoa",
+    "richtung": "fd",
+    "box": 1,
+    "richtig": 1,
+    "falsch": 0,
+    "serieRichtig": 1,
+    "faelligAm": "2026-11-27",
+    "zuletzt": "2026-11-26T11:05:33.289Z"
+   },
+   {
+    "key": "pr_rxut2e1t0nv|v_1qxiwab1umr|fd",
+    "profilId": "pr_rxut2e1t0nv",
+    "vokabelId": "v_1qxiwab1umr",
+    "richtung": "fd",
+    "box": 1,
+    "richtig": 1,
+    "falsch": 0,
+    "serieRichtig": 1,
+    "faelligAm": "2026-11-27",
+    "zuletzt": "2026-11-26T11:05:33.291Z"
+   }
+  ],
+  "ereignisse": [
+   {
+    "id": "e_174w4rp1r6e",
+    "profilId": "pr_rxut2e1t0nv",
+    "zeitpunkt": "2026-11-26T11:05:33.264Z",
+    "modus": "abfrage",
+    "vokabelId": "v_1apuya2fjbw",
+    "richtung": "fd",
+    "korrekt": true,
+    "ergebnis": "richtig",
+    "antwort": ""
+   },
+   {
+    "id": "e_19v8neg8gyb",
+    "profilId": "pr_rxut2e1t0nv",
+    "zeitpunkt": "2026-11-26T11:05:33.285Z",
+    "modus": "abfrage",
+    "vokabelId": "v_1lr28bx10tx",
+    "richtung": "fd",
+    "korrekt": true,
+    "ergebnis": "richtig",
+    "antwort": ""
+   },
+   {
+    "id": "e_1ahjc0fuzte",
+    "profilId": "pr_rxut2e1t0nv",
+    "zeitpunkt": "2026-11-26T11:05:33.257Z",
+    "modus": "abfrage",
+    "vokabelId": "v_18it78z17qs",
+    "richtung": "fd",
+    "korrekt": false,
+    "ergebnis": "falsch",
+    "antwort": ""
+   },
+   {
+    "id": "e_1bupcgf1vwy",
+    "profilId": "pr_rxut2e1t0nv",
+    "zeitpunkt": "2026-11-26T11:05:33.289Z",
+    "modus": "abfrage",
+    "vokabelId": "v_1ptgahn1eoa",
+    "richtung": "fd",
+    "korrekt": true,
+    "ergebnis": "richtig",
+    "antwort": ""
+   },
+   {
+    "id": "e_1qpfqntx1du",
+    "profilId": "pr_rxut2e1t0nv",
+    "zeitpunkt": "2026-11-26T11:05:33.282Z",
+    "modus": "abfrage",
+    "vokabelId": "v_1fsk8bvrhcn",
+    "richtung": "fd",
+    "korrekt": true,
+    "ergebnis": "richtig",
+    "antwort": ""
+   },
+   {
+    "id": "e_1wynrdvqe9t",
+    "profilId": "pr_rxut2e1t0nv",
+    "zeitpunkt": "2026-11-26T11:05:33.273Z",
+    "modus": "abfrage",
+    "vokabelId": "v_1e7oerv1skf",
+    "richtung": "fd",
+    "korrekt": true,
+    "ergebnis": "richtig",
+    "antwort": ""
+   },
+   {
+    "id": "e_alt0",
+    "profilId": "pr_rxut2e1t0nv",
+    "zeitpunkt": "2026-08-01T09:00:00.000Z",
+    "modus": "abfrage",
+    "vokabelId": "v_18it78z17qs",
+    "richtung": "fd",
+    "korrekt": true,
+    "ergebnis": "richtig",
+    "antwort": ""
+   },
+   {
+    "id": "e_alt1",
+    "profilId": "pr_rxut2e1t0nv",
+    "zeitpunkt": "2026-08-02T09:00:00.000Z",
+    "modus": "abfrage",
+    "vokabelId": "v_1apuya2fjbw",
+    "richtung": "fd",
+    "korrekt": false,
+    "ergebnis": "falsch",
+    "antwort": ""
+   },
+   {
+    "id": "e_alt2",
+    "profilId": "pr_rxut2e1t0nv",
+    "zeitpunkt": "2026-08-03T09:00:00.000Z",
+    "modus": "abfrage",
+    "vokabelId": "v_1bl5mcadahy",
+    "richtung": "fd",
+    "korrekt": true,
+    "ergebnis": "richtig",
+    "antwort": ""
+   },
+   {
+    "id": "e_alt3",
+    "profilId": "pr_rxut2e1t0nv",
+    "zeitpunkt": "2026-08-04T09:00:00.000Z",
+    "modus": "abfrage",
+    "vokabelId": "v_1e7oerv1skf",
+    "richtung": "fd",
+    "korrekt": false,
+    "ergebnis": "falsch",
+    "antwort": ""
+   },
+   {
+    "id": "e_alt4",
+    "profilId": "pr_rxut2e1t0nv",
+    "zeitpunkt": "2026-08-05T09:00:00.000Z",
+    "modus": "abfrage",
+    "vokabelId": "v_1f8ogb217el",
+    "richtung": "fd",
+    "korrekt": true,
+    "ergebnis": "richtig",
+    "antwort": ""
+   },
+   {
+    "id": "e_alt5",
+    "profilId": "pr_rxut2e1t0nv",
+    "zeitpunkt": "2026-08-06T09:00:00.000Z",
+    "modus": "abfrage",
+    "vokabelId": "v_1fsk8bvrhcn",
+    "richtung": "fd",
+    "korrekt": false,
+    "ergebnis": "falsch",
+    "antwort": ""
+   },
+   {
+    "id": "e_aspyca82acv",
+    "profilId": "pr_rxut2e1t0nv",
+    "zeitpunkt": "2026-11-26T11:05:33.288Z",
+    "modus": "abfrage",
+    "vokabelId": "v_1ot47nm8qt4",
+    "richtung": "fd",
+    "korrekt": true,
+    "ergebnis": "richtig",
+    "antwort": ""
+   },
+   {
+    "id": "e_ei7sq21ouc4",
+    "profilId": "pr_rxut2e1t0nv",
+    "zeitpunkt": "2026-11-26T11:05:33.287Z",
+    "modus": "abfrage",
+    "vokabelId": "v_1mbxrmv1wf6",
+    "richtung": "fd",
+    "korrekt": false,
+    "ergebnis": "falsch",
+    "antwort": ""
+   },
+   {
+    "id": "e_i6hqetbu3qr",
+    "profilId": "pr_rxut2e1t0nv",
+    "zeitpunkt": "2026-11-26T11:05:33.291Z",
+    "modus": "abfrage",
+    "vokabelId": "v_1qxiwab1umr",
+    "richtung": "fd",
+    "korrekt": true,
+    "ergebnis": "richtig",
+    "antwort": ""
+   },
+   {
+    "id": "e_lmhqei1468i",
+    "profilId": "pr_rxut2e1t0nv",
+    "zeitpunkt": "2026-11-26T11:05:33.274Z",
+    "modus": "abfrage",
+    "vokabelId": "v_1f8ogb217el",
+    "richtung": "fd",
+    "korrekt": false,
+    "ergebnis": "falsch",
+    "antwort": ""
+   },
+   {
+    "id": "e_r64znv1e1o0",
+    "profilId": "pr_rxut2e1t0nv",
+    "zeitpunkt": "2026-11-26T11:05:33.270Z",
+    "modus": "abfrage",
+    "vokabelId": "v_1bl5mcadahy",
+    "richtung": "fd",
+    "korrekt": true,
+    "ergebnis": "richtig",
+    "antwort": ""
+   },
+   {
+    "id": "e_veh7x5w6q1l",
+    "profilId": "pr_rxut2e1t0nv",
+    "zeitpunkt": "2026-11-26T11:05:33.284Z",
+    "modus": "abfrage",
+    "vokabelId": "v_1g3waln17gb",
+    "richtung": "fd",
+    "korrekt": true,
+    "ergebnis": "richtig",
+    "antwort": ""
+   }
+  ],
+  "termine": [
+   {
+    "id": "tm_alt",
+    "profilId": "pr_rxut2e1t0nv",
+    "titel": "Vokabeltest alt",
+    "datum": "2026-09-10",
+    "unitIds": [
+     "u_syoacn1p8ol"
+    ],
+    "erstelltAm": "2026-09-01T10:00:00.000Z",
+    "plan": []
+   }
+  ],
+  "tests": [
+   {
+    "id": "t_alt1",
+    "profilId": "pr_rxut2e1t0nv",
+    "unitId": "u_syoacn1p8ol",
+    "unitIds": [
+     "u_syoacn1p8ol"
+    ],
+    "zeitpunkt": "2026-09-01T10:00:00.000Z",
+    "prozent": 80,
+    "einschaetzung": "gut",
+    "fragen": [],
+    "schwacheVokabelIds": []
+   }
+  ],
+  "belohnungen": [
+   {
+    "profilId": "pr_rxut2e1t0nv",
+    "punkte": 113,
+    "serie": {
+     "aktuell": 1,
+     "rekord": 1,
+     "letzterLerntag": "2026-11-26"
+    },
+    "abzeichen": [
+     {
+      "id": "erste_uebung",
+      "erhaltenAm": "2026-11-26T11:05:33.293Z"
+     }
+    ],
+    "zaehler": {
+     "richtig": 9,
+     "satzbau": 0,
+     "formen": 0,
+     "sitzungen": 1,
+     "tests": 0
+    },
+    "punkteTag": {
+     "2026-11-26": 113
+    }
+   }
+  ]
+ }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "vokabel-studio",
+  "private": true,
+  "description": "Nur für automatische Tests – die App selbst braucht keinen Build-Schritt.",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:android": "playwright test --project=android",
+    "server": "node tests/server.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}
