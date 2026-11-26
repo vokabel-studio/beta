@@ -7,6 +7,18 @@ import { parseAntwort, pruefe, markiereDoppelte, findeUnit, speichere, vokabelPr
 
 let W = null;   // Zustand des Assistenten (bleibt beim Hin- und Herwechseln erhalten)
 
+// Zusatz zum Prompt, wenn statt eines Fotos der per Texterkennung (Google Lens / Live Text) kopierte Text kommt
+const TEXT_STATT_FOTO = `
+
+WICHTIG – ES GIBT KEIN FOTO: Statt eines Fotos bekommst du unten den Text der Vokabelseite, den eine automatische Texterkennung (z. B. Google Lens oder Live Text) kopiert hat. Beachte:
+- Spalten können durcheinandergeraten sein (z. B. erst alle Fremdwörter, dann alle deutschen Bedeutungen, dann die Beispielsätze). Ordne Wort, Lautschrift, Bedeutung und Beispiel sorgfältig einander zu. Halte dich an die Reihenfolge, in der die Wörter im Text stehen.
+- Lautschrift, Längenzeichen und Sonderzeichen sind oft falsch erkannt. Gib bei Englisch die korrekte britische Lautschrift an. Wenn du dir bei einer Zuordnung oder einem Wort nicht sicher bist, setze "unsicher": true mit kurzem Grund.
+- Seitenzahlen, Kopfzeilen und Übungsanweisungen gehören nicht in die Vokabelliste.
+- Alles andere (Aufbau, Felder, nur JSON) genau wie oben beschrieben.
+
+--- KOPIERTER TEXT DER VOKABELSEITE ---
+`;
+
 function neu(query, profil) {
   return {
     key: JSON.stringify(query), schritt: 'auswahl',
@@ -111,8 +123,19 @@ async function promptSchritt(ctx) {
       </div>
       <input id="w-kamera" type="file" accept="image/*" capture="environment" hidden>
       <input id="w-fotos" type="file" accept="image/*" multiple hidden>
-      <div id="w-ki-status"></div>
       <p class="muted small">Tipp: gerade von oben, gut beleuchtet, ganze Seite drauf. Bei sehr vollen Seiten zwei Fotos (oben/unten).</p>
+      <details class="text-weg"${W.lensText ? ' open' : ''}><summary><span><strong>📋 Text statt Foto</strong> <span class="muted small">(Google Lens / Live Text)</span></span></summary>
+        <ol class="small" style="padding-left:20px">
+          <li>Foto der Vokabelseite machen oder in der Galerie öffnen.</li>
+          <li><strong>Android:</strong> Google Lens › <strong>Text</strong> › <strong>Alles auswählen</strong> › Kopieren.<br>
+            <strong>iPhone:</strong> unten rechts auf das Text-Symbol (Live Text) tippen › <strong>Alles kopieren</strong>.</li>
+          <li>Hier einfügen und auf „Von der KI ordnen lassen“ tippen.</li>
+        </ol>
+        <textarea id="w-lens" placeholder="Kopierten Text der Vokabelseite hier einfügen …" style="min-height:140px;font-family:inherit;font-size:16px">${esc(W.lensText || '')}</textarea>
+        <button class="btn block" id="w-lens-ok" style="margin-top:8px">🤖 Von der KI ordnen lassen</button>
+        <p class="muted small">Vorteil: Text ist für die KI viel weniger Arbeit als ein Foto – das klappt meist auch, wenn die Bild-KI gerade überlastet ist. Lautschrift erkennt das Handy oft falsch; die KI ergänzt sie – bitte in der Kontrollansicht kurz prüfen.</p>
+      </details>
+      <div id="w-ki-status"></div>
     </div>
     <details class="card"><summary>Ohne KI: über ChatGPT/Gemini kopieren</summary>` : '<h2 style="margin-top:0">2. Chatbot fragen</h2>'}
     ${W.folge ? `<div class="card">
@@ -123,7 +146,7 @@ async function promptSchritt(ctx) {
       <ol style="padding-left:22px;margin:0">
         <li>Tippe auf <strong>Text kopieren</strong>.</li>
         <li>Öffne ChatGPT oder Gemini und füge den Text ein.</li>
-        <li>Hänge ein <strong>Foto der Vokabelseite</strong> an (📎 oder +) und schick es ab.</li>
+        <li>Hänge ein <strong>Foto der Vokabelseite</strong> an (📎 oder +) und schick es ab. <span class="muted">Geht auch ohne Foto: den mit Google Lens bzw. Live Text kopierten Text der Seite mit einfügen.</span></li>
         <li>Wenn die Antwort fertig ist: auf <strong>Kopieren</strong> unter dem Code-Block tippen und hierher zurückkommen.</li>
       </ol>
       <div class="btn-row"><button class="btn block" id="w-copy">📋 Text kopieren</button></div>
@@ -149,25 +172,31 @@ async function promptSchritt(ctx) {
       $('#w-weiter', root).onclick = () => weiter(ctx, 'einfuegen');
       if (!kiAn) return;
       const status = $('#w-ki-status', root);
-      const auswerten = async (dateien) => {
-        if (!dateien.length) return;
+      // auftraege: Fotos (File) oder ein per Texterkennung kopierter Text ({ text })
+      const auswerten = async (auftraege) => {
+        if (!auftraege.length) return;
         const roh = [], daten = [];
+        const knopf = $('#w-lens-ok', root);
+        if (knopf) knopf.disabled = true;
         try {
-          for (let i = 0; i < dateien.length; i++) {
-            status.innerHTML = `<div class="msg info"><span class="spinner"></span> Foto ${i + 1} von ${dateien.length} wird ausgewertet … (dauert meist 10–40 Sekunden)</div>`;
-            const bild = await K.bildVorbereiten(dateien[i]);
-            const antwort = await K.frage(text, { bilder: [bild], json: true, onStatus: (m) => {
-              status.innerHTML = `<div class="msg info"><span class="spinner"></span> Foto ${i + 1} von ${dateien.length}: ${esc(m)}</div>`;
-            } });
+          for (let i = 0; i < auftraege.length; i++) {
+            const a = auftraege[i];
+            const was = a.text ? 'Der Text' : auftraege.length > 1 ? `Foto ${i + 1} von ${auftraege.length}` : 'Das Foto';
+            status.innerHTML = `<div class="msg info"><span class="spinner"></span> ${was} wird ausgewertet … (dauert meist 10–40 Sekunden)</div>`;
+            const onStatus = (m) => { status.innerHTML = `<div class="msg info"><span class="spinner"></span> ${was}: ${esc(m)}</div>`; };
+            const antwort = a.text
+              ? await K.frage(text + TEXT_STATT_FOTO + a.text, { json: true, onStatus, timeoutMs: 90000 })
+              : await K.frage(text, { bilder: [await K.bildVorbereiten(a)], json: true, onStatus });
             roh.push(antwort);
             const p1 = parseAntwort(antwort);
-            if (p1.fehler.length) throw new Error(`Foto ${i + 1}: ${p1.fehler[0]}`);
+            if (p1.fehler.length) throw new Error(`${a.text ? 'Text' : `Foto ${i + 1}`}: ${p1.fehler[0]}`);
             daten.push(p1);
           }
         } catch (e) {
           status.innerHTML = `<div class="msg err"><strong>Das hat nicht geklappt.</strong><br>${esc(e.message).replace(/\n/g, '<br>')}</div>
             <p class="small">Du kannst es noch einmal versuchen oder unten den Weg über Kopieren nehmen.</p>`;
           if (roh.length) W.rohtext = roh.join('\n\n');
+          if (knopf) knopf.disabled = false;
           return;
         }
         W.rohtext = roh.join('\n\n');
@@ -180,6 +209,13 @@ async function promptSchritt(ctx) {
       };
       $('#w-kamera', root).onchange = (e) => auswerten([...e.target.files]);
       $('#w-fotos', root).onchange = (e) => auswerten([...e.target.files]);
+      const lens = $('#w-lens', root);
+      lens.oninput = () => { W.lensText = lens.value; };
+      $('#w-lens-ok', root).onclick = () => {
+        const t = lens.value.trim();
+        if (t.length < 20) { toast('Bitte zuerst den kopierten Text der Vokabelseite einfügen.'); lens.focus(); return; }
+        auswerten([{ text: t }]);
+      };
     }
   };
 }

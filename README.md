@@ -29,6 +29,7 @@ Wichtig: Safari und die Home-Bildschirm-App haben getrennte Speicher. Am besten 
 | + | Direkte KI-Auswertung von Fotos (Gemini, Groq, Mistral; eigener Gratis-Schlüssel, automatischer Anbieterwechsel), Vokabelpakete zum Teilen ohne Profile | ✅ |
 | + | Alles nachträglich bearbeiten/löschen (Bücher, Units, Parts, Vokabeln, Lernsätze, Satzbau, Termine), Vokabeln/Units von Hand anlegen, Lernstand je Unit zurücksetzen, angefangene Übung fortsetzen, Tagesziel pro Tag | ✅ (Beta) |
 | + | Gutscheine der Eltern (eigener Text, Freischalten durch Lernen, Einlösen per PIN), Hör-Quiz für unterwegs (Auto über CarPlay/Android Auto/Bluetooth) | ✅ (Beta) |
+| + | OpenRouter als vierter kostenloser KI-Anbieter (nur Gratis-Modelle), Einlesen per kopiertem Text (Google Lens / Live Text) statt Foto | ✅ (Beta) |
 
 **Bekannte Einschränkung iPhone/iPad:** Die Spracheingabe der App liefert unter iOS nur beim ersten Versuch nach dem App-Start Ton (Gerätetests Nov. 2026). Auf iOS wird deshalb das Tastatur-Diktat empfohlen; der App-Mikrofonknopf ist dort ausgeblendet.
 

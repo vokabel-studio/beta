@@ -412,7 +412,7 @@ export async function elternView(_p, ctx) {
     <div class="card" id="ki-karte">
       <h3 style="margin-top:0">🤖 KI-Anbindung <span class="badge">optional</span></h3>
       <p class="small">Mit eigenem, kostenlosem Zugangsschlüssel wertet die App Fotos der Vokabelseite <strong>selbst</strong> aus und prüft eigene Sätze. Schlüssel bleiben nur auf diesem Gerät und kommen <strong>nicht</strong> in die Sicherungsdatei.</p>
-      <p class="small"><strong>Tipp:</strong> Zwei Anbieter einrichten (z. B. Gemini und Groq). Ist einer überlastet, nimmt die App automatisch den anderen.</p>
+      <p class="small"><strong>Tipp:</strong> Zwei oder drei Anbieter einrichten (z. B. Gemini, Groq und OpenRouter – alle kostenlos). Ist einer überlastet, nimmt die App automatisch den nächsten.</p>
       ${reihe.length ? `<div class="msg ok small">Reihenfolge: ${reihe.map((a) => esc(K.ANBIETER[a].name)).join(' → ')}</div>` : ''}
       <div>${Object.keys(K.ANBIETER).map(kontoZeile).join('')}</div>
       <div id="ki-bearb"></div>

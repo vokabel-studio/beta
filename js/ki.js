@@ -20,8 +20,15 @@ export const ANBIETER = {
     name: 'Groq', schluesselUrl: 'https://console.groq.com/keys',
     daten: 'Kostenlos ohne Kreditkarte, begrenzt durch Nutzungslimits. Laut Groq kein Training mit den Daten.',
     standard: /(llama-4|vision|qwen.*vl|scout|maverick)/i
+  },
+  openrouter: {
+    name: 'OpenRouter', schluesselUrl: 'https://openrouter.ai/settings/keys',
+    daten: 'Kostenlos ohne Kreditkarte: Die App zeigt nur Gratis-Modelle („free“). Limit: 50 Anfragen am Tag, 20 pro Minute (mit einmalig 10 $ Guthaben 1000 am Tag). Achtung: Die Betreiber der Gratis-Modelle dürfen Eingaben teils speichern und zum Training nutzen. Die Auswahl an Gratis-Modellen ändert sich oft.',
+    standard: /(vl\b|vl[-:]|vision|gemma|openrouter\/free)/i
   }
 };
+// Bei diesen Anbietern gilt das Limit (429) fürs ganze Konto → warten statt nächstes Modell
+const KONTO_LIMIT = ['mistral', 'groq'];
 
 // Einstellungen: mehrere Anbieter gleichzeitig möglich.
 // { haupt: 'gemini', konten: { gemini: { schluessel, modell, ausweich: [] }, groq: {…} } }
@@ -74,6 +81,7 @@ async function pruefeAntwort(res, anbieter, modell) {
   const text = {
     400: `${n} hat die Anfrage abgelehnt. ${/key/i.test(detail) ? 'Der Schlüssel ist ungültig.' : 'Vielleicht kann das gewählte Modell keine Fotos lesen – anderes Modell wählen.'}`,
     401: `Der Schlüssel für ${n} ist ungültig oder abgelaufen.`,
+    402: `Bei ${n} fehlt Guthaben (oder das Konto ist im Minus). Gratis-Modelle gehen dann auch nicht.`,
     403: `${n} verweigert den Zugriff. Ist der Schlüssel freigeschaltet?`,
     404: `Das Modell${m} gibt es bei ${n} nicht (mehr). Bitte in den Eltern-Einstellungen ein anderes wählen.`,
     413: 'Das Foto ist zu groß.',
@@ -106,6 +114,15 @@ export async function modelle(anbieter, schluessel) {
       .filter((m) => (m.supportedGenerationMethods || []).includes('generateContent') && /gemini|gemma/i.test(m.name) && !/embedding|tts|image-generation|live|audio/i.test(m.name))
       .map((m) => ({ id: m.name.replace(/^models\//, ''), name: m.displayName || m.name }))
       .sort(sortiere);
+  }
+  if (anbieter === 'openrouter') {
+    // Die Modell-Liste ist öffentlich – deshalb zuerst den Schlüssel selbst prüfen
+    await hole('https://openrouter.ai/api/v1/key', { headers: { Authorization: `Bearer ${schluessel}` } }, anbieter, { timeoutMs: 20000 });
+    const j = await hole('https://openrouter.ai/api/v1/models', {}, anbieter, { timeoutMs: 20000 });
+    const gratis = (m) => /:free$/.test(m.id) || m.id === 'openrouter/free' || (m.pricing && +m.pricing.prompt === 0 && +m.pricing.completion === 0 && !+m.pricing.request);
+    return (j.data || []).filter(gratis)
+      .map((m) => ({ id: m.id, name: m.name || m.id, bild: Array.isArray(m.architecture?.input_modalities) ? m.architecture.input_modalities.includes('image') : undefined }))
+      .sort((a, b) => ((b.bild === true) - (a.bild === true)) || sortiere(a, b));
   }
   const url = anbieter === 'mistral' ? 'https://api.mistral.ai/v1/models' : 'https://api.groq.com/openai/v1/models';
   const j = await hole(url, { headers: { Authorization: `Bearer ${schluessel}` } }, anbieter, { timeoutMs: 20000 });
@@ -181,7 +198,9 @@ async function anfrage(anbieter, schluessel, modell, prompt, { bilder, json, tim
     if (kand.finishReason === 'MAX_TOKENS') throw zuLang();
     return (kand.content?.parts || []).filter((p) => !p.thought).map((p) => p.text || '').join('');
   }
-  const url = anbieter === 'mistral' ? 'https://api.mistral.ai/v1/chat/completions' : 'https://api.groq.com/openai/v1/chat/completions';
+  const url = { mistral: 'https://api.mistral.ai/v1/chat/completions', groq: 'https://api.groq.com/openai/v1/chat/completions', openrouter: 'https://openrouter.ai/api/v1/chat/completions' }[anbieter];
+  // Viele Gratis-Modelle bei OpenRouter kennen keinen JSON-Modus → dort weglassen (die App repariert/prüft die Antwort ohnehin)
+  if (anbieter === 'openrouter') json = false;
   const inhalt = bilder.length
     ? [{ type: 'text', text: prompt }, ...bilder.map((b) => (anbieter === 'mistral'
       ? { type: 'image_url', image_url: b.dataUrl }
@@ -189,6 +208,11 @@ async function anfrage(anbieter, schluessel, modell, prompt, { bilder, json, tim
     : prompt;
   const body = { model: modell, temperature: 0.2, messages: [{ role: 'user', content: inhalt }], ...(json ? { response_format: { type: 'json_object' } } : {}) };
   const j = await hole(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${schluessel}` }, body: JSON.stringify(body) }, anbieter, { timeoutMs, modell });
+  // OpenRouter meldet Fehler des eigentlichen Modell-Betreibers teils mit Status 200 im Inhalt
+  if (j.error) {
+    const st = +j.error.code || 'leer';
+    throw new KiFehler(`${ANBIETER[anbieter].name} (${modell}): ${j.error.message || 'Fehler beim Modell-Betreiber'}`, { status: st, uebergang: true, detail: j.error.message || '' });
+  }
   const wahl = j.choices?.[0];
   if (!wahl) throw new KiFehler('Keine Antwort erhalten.', { status: 'leer', uebergang: true });
   if (wahl.finish_reason === 'length') throw zuLang();
@@ -215,7 +239,7 @@ export async function frage(prompt, { bilder = [], json = false, onStatus = () =
   for (const anbieter of anbieterListe) {
     const konto = e.konten[anbieter];
     const name = ANBIETER[anbieter].name;
-    const kontoLimit = anbieter !== 'gemini';
+    const kontoLimit = KONTO_LIMIT.includes(anbieter);
     for (const modell of [konto.modell, ...(konto.ausweich || [])]) {
       if (!erster) onStatus(`Versuche ${name} (${modell}) …`);
       erster = false;
@@ -245,7 +269,7 @@ export async function frage(prompt, { bilder = [], json = false, onStatus = () =
     }
   }
   const tipp = anbieterListe.length === 1
-    ? 'Tipp: Einen zweiten Anbieter (z. B. Groq) unter Eltern › KI-Anbindung einrichten – dann weicht die App automatisch aus.'
+    ? 'Tipp: Einen zweiten Anbieter (z. B. Groq oder OpenRouter) unter Eltern › KI-Anbindung einrichten – dann weicht die App automatisch aus.'
     : 'Bitte später noch einmal versuchen.';
   throw new KiFehler(`Kein KI-Dienst hat geantwortet. ${tipp} Oder den Weg über Kopieren nutzen.\nVersucht: ${[...new Set(protokoll)].join(' · ')}`, { status: 'alle' });
 }
