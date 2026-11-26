@@ -18,6 +18,9 @@ export default defineConfig({
     baseURL: LIVE || `http://localhost:${PORT}/`,
     trace: process.env.CI ? 'retain-on-failure' : 'off',
     locale: 'de-DE',
+    // Offline-Speicher (Service Worker) in den Tests aus – sonst kann WebKit nachgebaute Antworten nicht einspielen.
+    // Der Offline-Test schaltet ihn gezielt wieder ein (tests/offline.spec.js).
+    serviceWorkers: 'block',
     timezoneId: 'Europe/Berlin'
   },
   projects: LIVE

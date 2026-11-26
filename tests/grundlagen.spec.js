@@ -50,15 +50,3 @@ test('Einstellungen zeigen die Version und speichern', async ({ page }) => {
   await page.selectOption('#st-ziel', '5');
   await expect.poll(() => app(page, async (m) => (await m.db.all('profile'))[0].einstellungen.tagesziel)).toBe(5);
 });
-
-test('App startet auch ohne Internet', async ({ page, context, browserName }) => {
-  test.skip(browserName !== 'chromium', 'Service Worker im Test nur mit Chromium zuverlässig');
-  await geh(page, '');
-  await page.evaluate(() => navigator.serviceWorker.ready);
-  await page.reload();
-  await expect(page.getByText('Willkommen bei Vokabel-Studio')).toBeVisible();
-  await context.setOffline(true);
-  await page.reload();
-  await expect(page.getByText('Willkommen bei Vokabel-Studio')).toBeVisible();
-  await context.setOffline(false);
-});
