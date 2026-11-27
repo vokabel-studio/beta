@@ -5,6 +5,7 @@ import * as G from './gutscheine.js';
 
 export async function gutscheineView(_p, ctx) {
   if (!ctx.profil) { ctx.go('profile'); return null; }
+  const neu = await G.pruefe(ctx.profil.id).catch(() => []);   // Erreichtes sofort freischalten, nicht erst nach der nächsten Übung
   const { b, tests } = await G.daten(ctx.profil.id);
   const offen = b.freigeschaltet.filter((f) => !f.eingeloestAm).sort((x, y) => y.am.localeCompare(x.am));
   const aktive = b.gutscheine.filter((g) => !g.erledigt);
@@ -36,6 +37,7 @@ export async function gutscheineView(_p, ctx) {
   return {
     title: 'Meine Gutscheine', back: 'home', html,
     bind(root) {
+      G.feiere(neu);
       $$('[data-einloesen]', root).forEach((btn) => btn.onclick = async () => {
         const f = offen.find((x) => x.id === btn.dataset.einloesen);
         if (!confirm(`Hast du „${f.text}“ bekommen? Dann wird der Gutschein als eingelöst markiert.`)) return;

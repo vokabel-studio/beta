@@ -4,7 +4,7 @@ import { lehrwerkName, unitWort } from './faecher.js';
 import { esc, $, $$, toast, uid, plural, datum } from './util.js';
 import * as L from './lernen.js';
 import { starteSitzung, unitKontext } from './lern-views.js';
-import { ABZEICHEN, hole as holeBelohnung } from './belohnung.js';
+import { ABZEICHEN, hole as holeBelohnung, serieJetzt } from './belohnung.js';
 import { avatarHtml } from './avatare.js';
 import { E } from './styles.js';
 
@@ -237,7 +237,7 @@ export async function erfolgeView(_p, ctx) {
   const html = `
     <div class="grid">
       <div class="card stat"><div class="big">${E('punkt')}</div><div class="zahl">${b.punkte}</div><div class="muted small">Punkte</div></div>
-      <div class="card stat"><div class="big">🔥</div><div class="zahl">${b.serie.aktuell}</div><div class="muted small">Tage am Stück (Rekord ${b.serie.rekord})</div></div>
+      <div class="card stat"><div class="big">🔥</div><div class="zahl">${serieJetzt(b)}</div><div class="muted small">Tage am Stück (Rekord ${b.serie.rekord})</div></div>
       <div class="card stat"><div class="big">🧠</div><div class="zahl">${stat.sicher}</div><div class="muted small">Vokabeln sicher</div></div>
       <div class="card stat"><div class="big">🏅</div><div class="zahl">${b.abzeichen.length}/${ABZEICHEN.length}</div><div class="muted small">Abzeichen</div></div>
     </div>
@@ -326,7 +326,7 @@ export async function elternView(_p, ctx) {
     tests.sort((a, c) => c.zeitpunkt.localeCompare(a.zeitpunkt));
     return `<div class="card">
       <h2 data-h="3" style="margin-top:0">${avatarHtml(p.avatar, 22)} ${esc(p.name)}</h2>
-      <p class="small">Zuletzt aktiv: <strong>${letzte ? datum(letzte) : 'noch nie'}</strong> · Serie: <strong>${plural(b.serie.aktuell, 'Tag', 'Tage')}</strong> (Rekord ${b.serie.rekord}) · ⭐ ${b.punkte}</p>
+      <p class="small">Zuletzt aktiv: <strong>${letzte ? datum(letzte) : 'noch nie'}</strong> · Serie: <strong>${plural(serieJetzt(b), 'Tag', 'Tage')}</strong> (Rekord ${b.serie.rekord}) · ⭐ ${b.punkte}</p>
       <h3 data-h="4" class="muted small">ANTWORTEN DER LETZTEN 7 TAGE</h3>
       <div class="woche">${tage.map((t) => `<div><span style="height:${Math.round(proTag.get(t) / max * 56) + 2}px"></span><small>${new Date(t + 'T12:00').toLocaleDateString('de-DE', { weekday: 'short' })}</small><b>${proTag.get(t)}</b></div>`).join('')}</div>
       <p class="small">Trefferquote insgesamt: <strong>${quote} %</strong> bei ${anzahl} Antworten</p>
@@ -339,6 +339,7 @@ export async function elternView(_p, ctx) {
     </div>`;
   }));
   const G = await import('./gutscheine.js');
+  for (const p of profile) await G.pruefe(p.id).catch(() => []);   // schon Erreichtes sofort freischalten
   const gsDaten = await Promise.all(profile.map(async (p) => ({ p, ...(await G.daten(p.id)) })));
   const gsListe = gsDaten.map(({ p, b, tests }) => {
     const offen = b.freigeschaltet.filter((f) => !f.eingeloestAm);

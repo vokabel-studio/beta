@@ -199,7 +199,7 @@ export async function homeView(_p, ctx) {
   // nur zählen statt alle Vokabeln laden
   const [units, nVok] = await Promise.all([db.all('units'), db.count('vokabeln')]);
   const lehrwerke = new Map((await db.all('lehrwerke')).map((l) => [l.id, l]));
-  const [L, { naechsterTermin }, { hole }, LV] = await Promise.all([import('./lernen.js'), import('./plan-views.js'), import('./belohnung.js'), import('./lern-views.js')]);
+  const [L, { naechsterTermin }, { hole, serieJetzt }, LV] = await Promise.all([import('./lernen.js'), import('./plan-views.js'), import('./belohnung.js'), import('./lern-views.js')]);
   const { tageBis, heute: heuteIso } = L;
   const meine = new Set(await L.profilUnitIds(ctx.profil));
   const zuletzt = units.filter((u) => meine.has(u.id)).sort((a, b) => (b.geaendertAm || '').localeCompare(a.geaendertAm || '')).slice(0, 3);
@@ -208,12 +208,14 @@ export async function homeView(_p, ctx) {
   const cloud = await db.getMeta('cloud');
   const [fz, termin, bel] = await Promise.all([nVok ? L.faelligZahlen(ctx.profil) : { faellig: 0, neu: 0, neuHeute: 0 }, naechsterTermin(ctx.profil.id), hole(ctx.profil.id)]);
   const offen = LV.offeneSitzung(ctx.profil.id);
-  const gutscheine = await (await import('./gutscheine.js')).offene(ctx.profil.id);
+  const GM = await import('./gutscheine.js');
+  const neueGs = await GM.pruefe(ctx.profil.id).catch(() => []);   // z. B. gerade von den Eltern angelegt und schon erreicht
+  const gutscheine = await GM.offene(ctx.profil.id);
   const GV = await import('./gutschein-views.js');
   const gz = await GV.gutscheinZahlen(ctx.profil.id);
   const tb = termin ? tageBis(termin.datum) : 0;
   const heuteInfo = {
-    faellig: fz.faellig, neu: fz.neu, neuHeute: fz.neuHeute, punkte: bel.punkte, serie: bel.serie.letzterLerntag ? bel.serie.aktuell : 0, termin,
+    faellig: fz.faellig, neu: fz.neu, neuHeute: fz.neuHeute, punkte: bel.punkte, serie: serieJetzt(bel), termin,
     terminText: termin ? (tb === 0 ? 'ist heute!' : tb === 1 ? 'ist morgen' : `in ${tb} Tagen`) : '',
     terminOffen: termin?.plan?.find((d) => d.datum === heuteIso())?.aufgaben.some((a) => !a.erledigt)
   };
@@ -266,7 +268,7 @@ export async function homeView(_p, ctx) {
     </ul></nav>
     ${isIOS() && !isStandalone() ? `<div class="msg info small">📱 Tipp: In Safari auf <strong>Teilen ⬆︎ › Zum Home-Bildschirm</strong> tippen. Dann startet Vokabel-Studio wie eine App.<br>
       Achtung: Safari und die Home-Bildschirm-App speichern getrennt. Lege die App am besten <strong>vor</strong> dem ersten Einlesen auf den Home-Bildschirm.</div>` : ''}`;
-  return { title: 'Vokabel-Studio', logo: true, html, bind(root) { bindUmzug(root); LV.bindFortsetzen(root, ctx); } };
+  return { title: 'Vokabel-Studio', logo: true, html, bind(root) { bindUmzug(root); LV.bindFortsetzen(root, ctx); GM.feiere(neueGs); } };
 }
 
 // ---------- Bibliothek ----------
